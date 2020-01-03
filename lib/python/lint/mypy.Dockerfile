@@ -10,4 +10,4 @@ RUN pip3 install -e .
 
 # This stuff
 RUN pip3 install mypy
-CMD mypy src tests
+CMD mypy setup.py src tests

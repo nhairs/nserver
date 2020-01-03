@@ -13,11 +13,10 @@ GIT_COMMIT=$(git rev-parse --short HEAD)
 PACKAGE_NAME=$(grep 'PACKAGE_NAME =' setup.py | cut -d '=' -f 2 | tr -d ' ' | tr -d '"')
 PACKAGE_PYTHON_NAME=$(echo -n "$PACKAGE_NAME" | tr '-' '_')
 
-LIB_DIR="lib"  # Just in case "lib" is a bad name
+AUTOCLEAN_LIMIT=10
 
-AUTOCLEAN_LIMIT="10"
-
-CI="0"  # Flag for if we are in CI
+# Notation Reference: https://unix.stackexchange.com/questions/122845/using-a-b-for-variable-assignment-in-scripts#comment685330_122848
+: ${CI:=0}  # Flag for if we are in CI - default to not.
 
 ### FUNCTIONS
 ### ============================================================================
@@ -28,7 +27,14 @@ function get_docker_tag {
 }
 
 function docker_build {
-    docker build --file "${LIB_DIR}/${1}" --tag "$(get_docker_tag "$2")" .
+    docker build \
+        --quiet \
+        --file "lib/${1}" \
+        --build-arg "PACKAGE_NAME=${PACKAGE_NAME}" \
+        --build-arg "PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}" \
+        --tag "$(get_docker_tag "$2")" \
+        .
+    echo
 }
 
 function docker_run {
@@ -38,11 +44,20 @@ function docker_run {
         "$(get_docker_tag "$1")"
 }
 
+function docker_run_interactive {
+    docker run --rm \
+        --interactive \
+        --tty \
+        --name "$(get_docker_tag "$1" | tr ":" "-")" \
+        --volume "$(pwd):/srv" \
+        "$(get_docker_tag "$1")"
+}
+
 
 function docker_autoclean {
-    if [[ $CI = "0" ]]; then
-        COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | grep -v "$GIT_COMMIT" | wc -l)
-        if [[ $COUNT_IMAGES > $AUTOCLEAN_LIMIT ]]; then
+    if [[ $CI = 0 ]]; then
+        COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | grep -vc "$GIT_COMMIT")
+        if [[ $COUNT_IMAGES -gt $AUTOCLEAN_LIMIT ]]; then
             heading "Autocleaning docker images"
         fi
     fi
@@ -77,29 +92,47 @@ docker_autoclean
 case $1 in
 
     "format")
-        if [[ $CI > 0 ]]; then
+        if [[ $CI -gt 0 ]]; then
             echo "ERROR! Do not run format in CI!"
             exit 250
         fi
-        heading "black (python)"
+        heading "black 🐍"
         docker_build "python/format/black.Dockerfile" format-black
         docker_run format-black
 
         ;;
 
     "lint")
-        heading "black - check only (python)"
+        heading "black - check only 🐍"
         docker_build "python/lint/black.Dockerfile" lint-black
         docker_run lint-black
 
-        heading "pylint (python)"
+        heading "pylint 🐍"
         docker_build "python/lint/pylint.Dockerfile" lint-pylint
         docker_run lint-pylint
 
-        heading "mypy (python)"
-        docker_build "python/lint/black.Dockerfile" lint-mypy
+        heading "mypy 🐍"
+        docker_build "python/lint/mypy.Dockerfile" lint-mypy
         docker_run lint-mypy
 
+        ;;
+
+    "test")
+        echo "WARNING: Not implemented"
+        ;;
+
+    "build")
+        echo "WARNING: Not implemented"
+        ;;
+
+    "upload")
+        echo "WARNING: Not implemented"
+        ;;
+
+    "repl")
+        heading "repl 🐍"
+        docker_build "python/repl/repl.Dockerfile" repl-python
+        docker_run_interactive repl-python
         ;;
 
     "debug")
@@ -111,10 +144,30 @@ case $1 in
         echo "Checking Directory Layout..."
         check_file "src/${PACKAGE_PYTHON_NAME}/__init__.py"
         check_file "src/${PACKAGE_PYTHON_NAME}/_version.py"
+
+        echo
+        ;;
+
+    "help")
+        echo "dev.sh - development utility"
+        echo "Usage: ./dev.sh COMMAND"
+        echo
+        echo "Commands:"
+        echo "    build     Build python packages"
+        echo "    debug     Display debug / basic health check information"
+        echo "    format    Format files"
+        echo "    help      Show this text"
+        echo "    lint      Lint files. You probably want to format first."
+        echo "    upload    Upload files to pypi server"
+        echo "    repl      Open Python interactive shell with package imported"
+        echo "    test      Run unit tests"
+        echo
+        echo ""
+
         ;;
 
     *)
-        echo "\e[1;31m Unkown command \"${1}\"\e[0m"
+        echo -e "\e[1;31mUnknown command \"${1}\"\e[0m"
         exit 255
         ;;
 esac

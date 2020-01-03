@@ -20,6 +20,8 @@ BUILD_GIT_BRANCH = ""
 BUILD_TIMESTAMP = ""
 BUILD_DATETIME = ""
 
+VERSION_VARS = vars()  # Don't have f-strings until py36
+
 ## Version Information Templates
 ## -----------------------------------------------------------------------------
 # You can customise the templates used for version information here.
@@ -36,17 +38,17 @@ VERSION_INFO_TEMPLATE_FULL = (
 
 ### FUNCTIONS
 ### ============================================================================
-def get_version_info_short() -> str:
-    return VERSION_INFO_TEMPLATE_SHORT.format(vars())
+def get_version_info_short() -> str:  # pylint: disable=missing-function-docstring
+    return VERSION_INFO_TEMPLATE_SHORT.format(**VERSION_VARS)
 
 
-def get_version_info() -> str:
-    return VERSION_INFO_TEMPLATE.format(vars())
+def get_version_info() -> str:  # pylint: disable=missing-function-docstring
+    return VERSION_INFO_TEMPLATE.format(**VERSION_VARS)
 
 
-def get_version_info_long() -> str:
-    return VERSION_INFO_TEMPLATE_LONG.format(vars())
+def get_version_info_long() -> str:  # pylint: disable=missing-function-docstring
+    return VERSION_INFO_TEMPLATE_LONG.format(**VERSION_VARS)
 
 
-def get_version_info_full() -> str:
-    return VERSION_INFO_TEMPLATE_FULL.format(vars())
+def get_version_info_full() -> str:  # pylint: disable=missing-function-docstring
+    return VERSION_INFO_TEMPLATE_FULL.format(**VERSION_VARS)

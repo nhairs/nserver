@@ -236,7 +236,7 @@ def get_readme() -> Optional[Tuple[str, str]]:
 # Due to the nature of how arguments are handled in `setup` and the possibility
 # of constants not being set, we selectively add them to a dict to use with
 # `**kwargs` notation.
-setup_extra_kwargs = {}
+setup_extra_kwargs = {}  # pylint: disable=invalid-name
 
 # Basic
 if PACKAGE_URL:
@@ -290,7 +290,7 @@ if PACKAGE_DOWNLOAD_URL:
     setup_extra_kwargs["download_url"] = PACKAGE_DOWNLOAD_URL
 
 # Other
-readme = get_readme()
+readme = get_readme()  # pylint: disable=invalid-name
 if readme is not None:
     setup_extra_kwargs["long_description"] = readme[0]
     setup_extra_kwargs["long_description_content_type"] = readme[1]
