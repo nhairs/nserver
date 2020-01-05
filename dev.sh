@@ -59,6 +59,14 @@ function docker_autoclean {
         COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | grep -vc "$GIT_COMMIT")
         if [[ $COUNT_IMAGES -gt $AUTOCLEAN_LIMIT ]]; then
             heading "Autocleaning docker images"
+            docker images --no-trunc | \
+                grep "$PACKAGE_NAME" | \
+                grep -v "$GIT_COMMIT" | \
+                grep -Eo "sha256\:[[:alnum:]]+" | \
+                cut -d ':' -f 2 | \
+                xargs -n 1 docker image rm \
+                || true  # Never error
+            docker system prune - f
         fi
     fi
 }
