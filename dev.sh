@@ -27,6 +27,7 @@ function get_docker_tag {
 }
 
 function docker_build {
+    echo "🐋 Building $2"
     docker build \
         --quiet \
         --file "lib/${1}" \
@@ -34,10 +35,10 @@ function docker_build {
         --build-arg "PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}" \
         --tag "$(get_docker_tag "$2")" \
         .
-    echo
 }
 
 function docker_run {
+    echo "🐋 running $1\n"
     docker run --rm \
         --name "$(get_docker_tag "$1" | tr ":" "-")" \
         --volume "$(pwd):/srv" \
@@ -54,19 +55,28 @@ function docker_run_interactive {
 }
 
 
+function docker_clean {
+    echo "🐋 Removing ${PACKAGE_NAME} images"
+    COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | wc -l)
+    if [[ $COUNT_IMAGES -gt 0 ]]; then
+        docker images | grep "$PACKAGE_NAME" | awk '{OFS=":"} {print $1, $2}' | xargs docker rmi
+    fi
+}
+
+function docker_clean_unused {
+    docker images | \
+        grep "$PACKAGE_NAME" | \
+        grep -v "$GIT_COMMIT" | \
+        awk '{OFS=":"} {print $1, $2}' | \
+        xargs docker rmi
+}
+
 function docker_autoclean {
     if [[ $CI = 0 ]]; then
-        COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | grep -vc "$GIT_COMMIT")
+        COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | grep -v "$GIT_COMMIT" | wc -l)
         if [[ $COUNT_IMAGES -gt $AUTOCLEAN_LIMIT ]]; then
-            heading "Autocleaning docker images"
-            docker images --no-trunc | \
-                grep "$PACKAGE_NAME" | \
-                grep -v "$GIT_COMMIT" | \
-                grep -Eo "sha256\:[[:alnum:]]+" | \
-                cut -d ':' -f 2 | \
-                xargs -n 1 docker image rm \
-                || true  # Never error
-            docker system prune - f
+            heading "Removing unused ${PACKAGE_NAME} images 🐋"
+            docker_clean_unused
         fi
     fi
 }
