@@ -136,7 +136,14 @@ case $1 in
         ;;
 
     "test")
-        echo "WARNING: Not implemented"
+        heading "pytest 🐍"
+        docker_build "python/test/pytest.Dockerfile" test-pytest
+        docker_run test-pytest
+
+        heading "tox 🐍"
+        docker_build "python/test/tox.Dockerfile" test-tox
+        docker_run test-tox
+
         ;;
 
     "build")
