@@ -160,6 +160,19 @@ case $1 in
         docker_run_interactive repl-python
         ;;
 
+    "clean")
+        heading "Cleaning"
+        docker_clean
+
+        echo "🐍 pyclean"
+        pyclean src
+        pyclean tests
+
+        echo "🐍 remove build artifacts"
+        rm -rf build dist "src/${PACKAGE_PYTHON_NAME}.egg-info"
+
+        ;;
+
     "debug")
         heading "Debug"
         echo "GIT_COMMIT=${GIT_COMMIT}"
@@ -179,6 +192,7 @@ case $1 in
         echo
         echo "Commands:"
         echo "    build     Build python packages"
+        echo "    clean     Cleanup clutter"
         echo "    debug     Display debug / basic health check information"
         echo "    format    Format files"
         echo "    help      Show this text"
