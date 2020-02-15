@@ -45,7 +45,7 @@ from setuptools import setup, find_packages
 #
 # See also:
 #   - https://packaging.python.org/specifications/core-metadata/#name
-PACKAGE_NAME = "python-template"
+PACKAGE_NAME = "nserver"
 
 # To enable reuse, we use calculate the python package name now.
 # DO NOT EDIT THIS UNLESS ADVANCED USER.
@@ -62,17 +62,20 @@ PACKAGE_PYTHON_NAME = PACKAGE_NAME.replace("-", "_")
 #
 # See also:
 #   - https://www.python.org/dev/peps/pep-0440/
-PACKAGE_VERSION = "0.0.0"
+PACKAGE_VERSION = "0.0.1"
 
-PACKAGE_DESCRIPTION = "This is a sample python package used as a template"
+PACKAGE_DESCRIPTION = "DNS Name Server Framework"
 
-PACKAGE_URL = None
+PACKAGE_URL = "https://github.com/nhairs/nserver"
 
-PACKAGE_AUTHOR = None
+PACKAGE_AUTHOR = "Nicholas Hairs"
 
 PACKAGE_AUTHOR_EMAIL = None
 
-PACKAGE_DEPENDENCIES = []
+PACKAGE_DEPENDENCIES = [
+    "dnslib",
+    "tldextract",
+]
 
 
 ## Intermediate Configuration
