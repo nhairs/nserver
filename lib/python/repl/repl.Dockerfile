@@ -9,6 +9,8 @@ RUN pip3 install -e .
 
 ARG PACKAGE_PYTHON_NAME
 
+ADD src /srv/
+
 # This stuff
 RUN echo "import ${PACKAGE_PYTHON_NAME}; import ${PACKAGE_PYTHON_NAME}._version; print(${PACKAGE_PYTHON_NAME}._version.get_version_info_full())" > /tmp/repl.py
 

@@ -140,10 +140,14 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,
         ## General Changes
-        useless-return,  # Explicit is better than implicit
+        # Explicit is better than implicit so bare returns
+        useless-return,
         # pylint and black sometimes disagree - we always prefer black in these
         # cases. Disable rules that can cause conflicts
-        line-too-long
+        line-too-long,
+        bad-continuation,
+        # Module docstrings are not required
+        missing-module-docstring
         ## Project Disables
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -293,7 +297,8 @@ good-names=i,
            k,
            ex,
            Run,
-           _
+           _,
+           e
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
