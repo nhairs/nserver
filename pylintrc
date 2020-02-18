@@ -484,8 +484,9 @@ single-line-if-stmt=no
 
 # List of note tags to take in consideration, separated by a comma.
 notes=FIXME,
-      XXX,
-      TODO
+      XXX
+      # Don't count TODO as needing fix
+      # TODO
 
 
 [IMPORTS]
