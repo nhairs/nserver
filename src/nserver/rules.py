@@ -38,6 +38,9 @@ class RegexRule(RuleBase):
     """
 
     def __init__(self, regex: Pattern, allowed_qtypes: List, func: ResponseFunction) -> None:
+        # TODO: Consider allowing strings and then compiling to regex since can
+        # test for regex types: `if isinsance(regex, Pattern)`
+
         self.regex = regex
         self.allowed_qtypes = set(allowed_qtypes)
         self.func = func

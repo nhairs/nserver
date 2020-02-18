@@ -1,18 +1,17 @@
 ### IMPORTS
 ### ============================================================================
 ## Standard Library
+from argparse import Namespace
 import logging
-import socket
-import struct
-import time
-from typing import List, Callable, Dict, Optional, Tuple
+from typing import List, Callable, Dict, Pattern
 
 ## Installed
 import dnslib
 
 ## Application
-from .rules import RuleBase
+from .rules import RuleBase, WildcardStringRule, RegexRule
 from .models import Query, Response
+from .transport import UDPv4Transport, TCPv4Transport, TransportBase
 
 ### NAME SERVER
 ### ============================================================================
@@ -20,6 +19,8 @@ class NameServer:
     """NameServer for responding to requests.
 
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, name: str, hostname: str) -> None:
         """Initialise NameServer
@@ -38,21 +39,25 @@ class NameServer:
         }
         self._logger = logging.getLogger(f"nserver.instance.{self.name}")
         self._before_first_query_run = False
-        self.settings = {
-            "SERVER_TYPE": "UDPv4",
-            "SERVER_ADDRESS": "localhost",
-            "SERVER_PORT": 9953,
-            "DEBUG": False,
-            "HEALTH_CHECK": False,
-            "STATS": False,
-            "REMOTE_ADMIN": False,
-        }
+
+        self.settings = Namespace()
+        self.settings.SERVER_TYPE = "UDPv4"
+        self.settings.SERVER_ADDRESS = "localhost"
+        self.settings.SERVER_PORT = 9953
+        self.settings.DEBUG = False
+        self.settings.HEALTH_CHECK = False
+        self.settings.STATS = False
+        self.settings.REMOTE_ADMIN = False
+        self.settings.CONSOLE_LOG_LEVEL = logging.INFO
+        self.settings.FILE_LOG_LEVEL = logging.INFO
+
         self.shutdown_server = False
         return
 
     def register_rule(self, rule: RuleBase) -> None:
         """Register the given rule.
         """
+        self._debug(f"Registered rule: {rule!r}")
         self.rules.append(rule)
         return
 
@@ -72,17 +77,34 @@ class NameServer:
         raise NotImplementedError()
 
     def run(self) -> None:
-        server_type = self.settings["SERVER_TYPE"]
+        # Setup Logging
+        console_logger = logging.StreamHandler()
+        console_logger.setLevel(self.settings.CONSOLE_LOG_LEVEL)
+
+        console_formatter = logging.Formatter(
+            "[{asctime}][{levelname}][{name}] {message}", style="{"
+        )
+
+        console_logger.setFormatter(console_formatter)
+
+        self._logger.addHandler(console_logger)
+        self._logger.setLevel(min(self.settings.CONSOLE_LOG_LEVEL, self.settings.FILE_LOG_LEVEL))
+
+        # Start Server
+        server_type = self.settings.SERVER_TYPE
+        server: TransportBase
 
         if server_type == "TCPv4":
-            server = TCPv4Transport(self.settings["SERVER_ADDRESS"], self.settings["SERVER_PORT"])
+            server = TCPv4Transport(self.settings.SERVER_ADDRESS, self.settings.SERVER_PORT)
         elif server_type == "UDPv4":
-            server = UDPv4Transport(self.settings["SERVER_ADDRESS"], self.settings["SERVER_PORT"])
+            server = UDPv4Transport(self.settings.SERVER_ADDRESS, self.settings.SERVER_PORT)
         else:
             raise ValueError(f"Unknown SERVER_TYPE: {server_type}")
 
+        self._info(f"Starting {server}")
         server.start_server()
 
+        # Process Requests
         try:
             while True:
                 if self.shutdown_server:
@@ -91,25 +113,36 @@ class NameServer:
                 response = self._process_dns_record(message.message)
                 message.response = response
                 server.send_message_response(message)
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as e:  # pylint: disable=broad-except
+            self._critical(f"Uncaught error occured. {e}", exc_info=True)
         except KeyboardInterrupt:
-            pass
+            self._info(f"KeyboardInterrupt received.")
 
+        # Stop Server
+        self._info("Shutting down server")
         server.stop_server()
+
+        # Teardown Logging
+        self._logger.removeHandler(console_logger)
         return
 
     ## Decorators
     ## -------------------------------------------------------------------------
-    def rule(self, rule, *args, **kwargs):
+    def rule(self, rule_, allowed_qtypes):
         """Decorator for registering a function as a rule.
 
         If regex, then RegexRule, if str then WildcardStringRule.
         """
 
         def decorator(func):
-            print(f"func: {func!r}, args: {args}, kwargs: {kwargs}")
-            # TO DO: actually register the rule
+            if isinstance(rule, str):
+                rule = WildcardStringRule(rule_, allowed_qtypes, func)
+            elif isinstance(rule_, Pattern):
+                rule = RegexRule(rule_, allowed_qtypes, func)
+            else:
+                raise ValueError(f"Could not handle rule: {rule_!r}")
+
+            self.register_rule(rule_)
             return func
 
         return decorator
@@ -147,16 +180,18 @@ class NameServer:
         """
         if not self._before_first_query_run:
             # Not implemented (might move to s
-            pass
+            self._debug("Running before_first_query")
 
         response = message.reply()
 
         if message.header.opcode != dnslib.OPCODE.QUERY:
+            self._info(f"Received non-query opcode: {message.header.opcode}")
             # This server only response to DNS queries
             response.header.set_rcode(dnslib.RCODE.REFUSED)
             return response
 
         if len(message.questions) != 1:
+            self._info(f"Received len(questions_ != 1 ({message.questions})")
             # To simplify things we only respond if there is 1 question.
             # This is apparently common amongst DNS server implementations.
             # For more information see the responses to this SO question:
@@ -166,20 +201,24 @@ class NameServer:
 
         try:
             query = Query.from_dns_question(message.questions[0])
+            self._info(f"Question: {query.type} {query.name}")
 
             # Process before_request hooks
             for hook in self.hooks["before_query"]:
                 result = hook(query)
                 if result is not None:
                     # before_request hook returned a response, stop processing
+                    self._debug(f"Matched before_hook: {hook}")
                     break
             else:
                 # No hook returned a response
                 for rule in self.rules:
                     rule_func = rule.get_func(query)
                     if rule_func is not None:
+                        self._info(f"Matched Rule: {rule}")
                         break
                 else:
+                    self._info("Did not match any rule")
                     response.header.set_rcode(dnslib.RCODE.NXDOMAIN)
                     return response
 
@@ -199,7 +238,8 @@ class NameServer:
 
             # TO DO
 
-        except Exception:  # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
+            self._error(f"Uncaught Exception {e}", exc_info=True)
             # NOTE: We create a new response so that if an error occurs partway through
             # constructing the response we response with an empty SERVFAIL response
             # opposed to a partial SERVFAIL response.
@@ -209,154 +249,46 @@ class NameServer:
 
         return response
 
+    ## Logging
+    ## -------------------------------------------------------------------------
+    def _vvdebug(self, *args, **kwargs):
+        """Log very verbose debug message.
+        """
 
-## Transport Classes
-## -----------------------------------------------------------------------------
-class MessageContainer:
-    """Class for holding DNS messages and the socket they originated from.
+        return self._logger.log(6, *args, **kwargs)
 
-    Used to simplify the interface (and allow for threading etc later).
-    """
+    def _vdebug(self, *args, **kwargs):
+        """Log verbose debug message.
+        """
 
-    SOCKET_TYPES = {"UDPv4", "TCPv4"}
+        return self._logger.log(8, *args, **kwargs)
 
-    def __init__(
-        self,
-        raw_data: bytes,
-        socket_: socket.socket,
-        socket_type: str,
-        remote_address: Tuple[str, str],
-    ):
-        if socket_type not in self.SOCKET_TYPES:
-            raise ValueError(f"Unkown socket_type {socket_type!r}")
+    def _debug(self, *args, **kwargs):
+        """Log debug message.
+        """
 
-        self.message = dnslib.DNSRecord.parse(raw_data)
-        self.socket = socket_
-        self.socket_type = socket_type
-        self.remote_address = remote_address
-        self.response: Optional[dnslib.DNSRecord] = None
-        return
+        return self._logger.debug(*args, **kwargs)
 
-    def get_response_bytes(self):
-        if self.response is None:
-            raise RuntimeError("response not set!")
-        return self.response.pack()
+    def _info(self, *args, **kwargs):
+        """Log very verbose debug message.
+        """
 
+        return self._logger.info(*args, **kwargs)
 
-class TransportBase:
-    def start_server(self, timeout=60) -> None:
-        raise NotImplementedError()
+    def _warning(self, *args, **kwargs):
+        """Log warning message.
+        """
 
-    def stop_server(self) -> None:
-        raise NotImplementedError()
+        return self._logger.warning(*args, **kwargs)
 
-    def receive_message(self) -> MessageContainer:
-        raise NotImplementedError()
+    def _error(self, *args, **kwargs):
+        """Log an error message.
+        """
 
-    def send_message_response(self, message: MessageContainer) -> None:
-        raise NotImplementedError()
+        return self._logger.error(*args, **kwargs)
 
+    def _critical(self, *args, **kwargs):
+        """Log a critical message.
+        """
 
-class UDPv4Transport(TransportBase):
-    """Transport class for IPv4 UDP.
-    """
-
-    SOCKET_TYPE = "UDPv4"
-
-    def __init__(self, address: str, port: int):
-        self.address = address
-        self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        return
-
-    def start_server(self, timeout=60) -> None:
-        start_time = time.time()
-        while (time.time() - start_time) < timeout:
-            try:
-                self.socket.bind((self.address, self.port))
-                break
-            except OSError as e:
-                if e.errno == 98:
-                    # Socket already in use.
-                    time.sleep(5)
-                    continue
-                raise e
-        else:
-            raise RuntimeError(f"Failed to bind server after {timeout} seconds")
-        return
-
-    def receive_message(self) -> MessageContainer:
-        data, remote_address = self.socket.recvfrom(512)
-        message = MessageContainer(data, None, self.SOCKET_TYPE, remote_address)
-        return message
-
-    def send_message_response(self, message: MessageContainer) -> None:
-        if message.socket_type != self.SOCKET_TYPE:
-            raise RuntimeError(f"Invalid socket_type: {message.socket_type} != {self.SOCKET_TYPE}")
-        data = message.get_response_bytes()
-        self.socket.sendto(data, message.remote_address)
-        return
-
-    def stop_server(self) -> None:
-        self.socket.close()
-        return
-
-
-class TCPv4Transport(TransportBase):
-    """Transport class for IPv4 TCP.
-
-    References:
-        - https://tools.ietf.org/html/rfc7766#section-8
-    """
-
-    SOCKET_TYPE = "TCPv4"
-
-    def __init__(self, address: str, port: int):
-        self.address = address
-        self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        return
-
-    def start_server(self, timeout=60) -> None:
-        start_time = time.time()
-        while (time.time() - start_time) < timeout:
-            try:
-                self.socket.bind((self.address, self.port))
-                break
-            except OSError as e:
-                if e.errno == 98:
-                    # Socket already in use.
-                    time.sleep(5)
-                    continue
-                raise e
-        else:
-            raise RuntimeError(f"Failed to bind server after {timeout} seconds")
-        self.socket.listen()
-        return
-
-    def receive_message(self) -> MessageContainer:
-        connection, remote_address = self.socket.accept()
-
-        data_length = struct.unpack("!H", connection.recv(2))[0]
-        data_remaining = data_length
-        data = b""
-
-        while data_remaining > 0:
-            data += connection.recv(data_remaining)
-            data_remaining = data_length - len(data)
-
-        message = MessageContainer(data, connection, self.SOCKET_TYPE, remote_address)
-        return message
-
-    def send_message_response(self, message: MessageContainer) -> None:
-        if message.socket_type != self.SOCKET_TYPE:
-            raise RuntimeError(f"Invalid socket_type: {message.socket_type} != {self.SOCKET_TYPE}")
-        data = message.get_response_bytes()
-        encoded_length = struct.pack("!H", len(data))
-        message.socket.sendall(encoded_length + data)
-        message.socket.close()
-        return
-
-    def stop_server(self) -> None:
-        self.socket.close()
-        return
+        return self._logger.critical(*args, **kwargs)

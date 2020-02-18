@@ -23,7 +23,7 @@ class Query:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def from_dns_question(cls, question):
-        query = cls(dnslib.QTYPE[question.qtype], question.qname.rstrip("."))
+        query = cls(dnslib.QTYPE[question.qtype], str(question.qname).rstrip("."))
         return query
 
 
