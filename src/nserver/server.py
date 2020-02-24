@@ -12,6 +12,7 @@ import dnslib
 from .rules import RuleBase, WildcardStringRule, RegexRule
 from .models import Query, Response
 from .transport import UDPv4Transport, TCPv4Transport, TransportBase
+from .records import RecordBase
 
 ### NAME SERVER
 ### ============================================================================
@@ -178,6 +179,9 @@ class NameServer:
         This is the main function that implements all the hooks, rule processing,
         error handling, etc.
         """
+
+        # pylint: disable=too-many-branches
+
         if not self._before_first_query_run:
             # Not implemented (might move to s
             self._debug("Running before_first_query")
@@ -227,6 +231,14 @@ class NameServer:
             # Ensure result is a Response object
             if result is None:
                 result = Response()
+            elif isinstance(result, RecordBase) and result.__class__ is not RecordBase:
+                result = Response(result)
+            elif isinstance(result, list):
+                for item in result:
+                    if not isinstance(item, RecordBase) or result.__class__ is RecordBase:
+                        raise TypeError()
+            elif not isinstance(result, Response):
+                raise TypeError(f"Cannot process result: {result!r}")
 
             # run after_query hooks
             for hook in self.hooks["after_query"]:
@@ -235,8 +247,10 @@ class NameServer:
             # Add results to response
             # Note: we do this in the same try-except block so that if we get a
             # malformed `Response` instance we response with nothing
-
-            # TO DO
+            response.add_answer(*result.answers)
+            response.add_ar(*result.additional)
+            response.add_auth(*result.authority)
+            response.header.set_rcode(result.error_code)
 
         except Exception as e:  # pylint: disable=broad-except
             self._error(f"Uncaught Exception {e}", exc_info=True)

@@ -1,11 +1,13 @@
 ### IMPORTS
 ### ============================================================================
 ## Standard Library
+from typing import Optional, Union, List
 
 ## Installed
 import dnslib
 
 ## Application
+from .records import RecordBase
 
 ### CLASSES
 ### ============================================================================
@@ -26,8 +28,54 @@ class Query:  # pylint: disable=too-few-public-methods
         query = cls(dnslib.QTYPE[question.qtype], str(question.qname).rstrip("."))
         return query
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.type!r}, {self.name!r})"
+
+    def __str__(self):
+        return self.__repr__()
+
 
 ## Response Classes
 ## -----------------------------------------------------------------------------
+OptionalRecordList = Optional[Union[RecordBase, List[RecordBase]]]
+
+
 class Response:
-    pass
+    """Simplified version of a DNS response.
+    """
+
+    def __init__(
+        self,
+        answers: OptionalRecordList = None,
+        additional: OptionalRecordList = None,
+        authority: OptionalRecordList = None,
+        error_code: int = dnslib.RCODE.NOERROR,
+    ) -> None:
+        if answers is None:
+            answers = []
+        elif isinstance(answers, RecordBase):
+            answers = [answers]
+        self.answers = answers
+
+        if additional is None:
+            additional = []
+        elif isinstance(additional, RecordBase):
+            additional = [additional]
+        self.additional = additional
+
+        if authority is None:
+            authority = []
+        elif isinstance(authority, RecordBase):
+            authority = [authority]
+        self.authority = authority
+
+        if error_code not in dnslib.RCODE.forward:
+            raise ValueError(f"Unknown RCODE: {error_code}")
+        self.error_code = error_code
+        return
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(answers={self.answers!r}, additional={self.additional!r}, authority={self.authority!r}, error_code={self.error_code!r})"
+
+    def __str__(self):
+        return self.__repr__()
