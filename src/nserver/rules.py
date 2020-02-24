@@ -53,6 +53,12 @@ class RegexRule(RuleBase):
             return self.func
         return None
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(regex={self.regex.pattern!r}, allowed_qtypes={self.allowed_qtypes!r}, func={self.func!r})"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.regex.pattern!r}, {self.allowed_qtypes!r})"
+
 
 class WildcardStringRule(RuleBase):
     """Rule that allows a more concise way of matching query names.
@@ -105,3 +111,9 @@ class WildcardStringRule(RuleBase):
 
         regex = re.compile(r"\.".join(regex_parts))
         return regex
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(wildcard_string={self.wildcard_string!r}, allowed_qtypes={self.allowed_qtypes!r}, func={self.func!r})"
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.wildcard_string!r}, {self.allowed_qtypes!r})"
