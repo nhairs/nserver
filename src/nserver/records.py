@@ -23,7 +23,7 @@ class RecordBase:
 
     NOT to be used directly.
 
-    Subclasses must set __record_kwargs
+    Subclasses must set _record_kwargs
     """
 
     def __init__(self, resource_name: str, ttl: int = None) -> None:
@@ -31,9 +31,9 @@ class RecordBase:
             raise RuntimeError("Do not instantiate directly - only subclass")
 
         type_name = self.__class__.__name__
-        self.__qtype = getattr(dnslib.QTYPE, type_name)
-        self.__class = getattr(dnslib, type_name)
-        self.__record_kwargs: Dict[str, Any]
+        self._qtype = getattr(dnslib.QTYPE, type_name)
+        self._class = getattr(dnslib, type_name)
+        self._record_kwargs: Dict[str, Any]
         self.ttl = ttl if ttl is not None else DEFAULT_TTL
         self.resource_name = resource_name
         return
@@ -41,8 +41,8 @@ class RecordBase:
     def to_resource_record(self) -> dnslib.RR:
         resource_record = dnslib.RR(
             rname=self.resource_name,
-            rtype=self.__qtype,
-            rdata=self.__class(self.__record_kwargs),
+            rtype=self._qtype,
+            rdata=self._class(**self._record_kwargs),
             ttl=self.ttl,
         )
         return resource_record
@@ -63,7 +63,7 @@ class A(RecordBase):  # pylint: disable=invalid-name
 
         # Consider support int
 
-        self.__record_kwargs = {"data": str(ip)}
+        self._record_kwargs = {"data": str(ip)}
         return
 
 
@@ -80,7 +80,7 @@ class AAAA(RecordBase):
             except ValueError:
                 raise ValueError("Invalid IPv6 Address")
 
-        self.__record_kwargs = {"data": str(ip)}
+        self._record_kwargs = {"data": str(ip)}
         return
 
 
@@ -111,7 +111,7 @@ class TXT(RecordBase):
                 start_slice += 255
                 end_slice += 255
 
-        self.__record_kwargs = {"data": data}
+        self._record_kwargs = {"data": data}
         return
 
 
@@ -128,7 +128,7 @@ class CNAME(RecordBase):
         if not self.regex.fullmatch(domain):
             raise ValueError(f"{domain!r} is not a valid domain")
 
-        self.__record_kwargs = {"label": domain}
+        self._record_kwargs = {"label": domain}
         return
 
 

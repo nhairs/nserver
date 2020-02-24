@@ -136,10 +136,12 @@ class NameServer:
         """
 
         def decorator(func):
-            if isinstance(rule, str):
-                rule = WildcardStringRule(rule_, allowed_qtypes, func)
+            nonlocal rule_
+            nonlocal allowed_qtypes
+            if isinstance(rule_, str):
+                rule_ = WildcardStringRule(rule_, allowed_qtypes, func)
             elif isinstance(rule_, Pattern):
-                rule = RegexRule(rule_, allowed_qtypes, func)
+                rule_ = RegexRule(rule_, allowed_qtypes, func)
             else:
                 raise ValueError(f"Could not handle rule: {rule_!r}")
 
@@ -247,9 +249,9 @@ class NameServer:
             # Add results to response
             # Note: we do this in the same try-except block so that if we get a
             # malformed `Response` instance we response with nothing
-            response.add_answer(*result.answers)
-            response.add_ar(*result.additional)
-            response.add_auth(*result.authority)
+            response.add_answer(*result.get_answer_records())
+            response.add_ar(*result.get_additional_records())
+            response.add_auth(*result.get_authority_records())
             response.header.set_rcode(result.error_code)
 
         except Exception as e:  # pylint: disable=broad-except

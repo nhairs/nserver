@@ -79,3 +79,12 @@ class Response:
 
     def __str__(self):
         return self.__repr__()
+
+    def get_answer_records(self) -> List[dnslib.RD]:
+        return [record.to_resource_record() for record in self.answers]
+
+    def get_additional_records(self) -> List[dnslib.RD]:
+        return [record.to_resource_record() for record in self.additional]
+
+    def get_authority_records(self) -> List[dnslib.RD]:
+        return [record.to_resource_record() for record in self.authority]
