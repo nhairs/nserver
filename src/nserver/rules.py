@@ -102,10 +102,10 @@ class WildcardStringRule(RuleBase):
         for part in self.wildcard_string.format(**sub_vars).split("."):
             if part == "*":
                 # Single part match
-                regex_parts.append(r"[a-z\-\_]+")
+                regex_parts.append(r"[a-z0-9\-\_]+")
             elif part == "**":
                 # Extended part match
-                regex_parts.append(r"(?:[a-z\-\_]+\.)+(?:[a-z\-\_]+)")
+                regex_parts.append(r"(?:[a-z0-9\-\_]+\.)+(?:[a-z0-9\-\_]+)")
             else:
                 regex_parts.append(re.escape(part))
 
