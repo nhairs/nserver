@@ -23,15 +23,13 @@ class NameServer:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, name: str, hostname: str) -> None:
+    def __init__(self, name: str) -> None:
         """Initialise NameServer
 
         args:
             name: The name of the server. This is used for internal logging.
-            hostname: The name of the current host, is used for populating authority records.
         """
         self.name = name
-        self.hostname = hostname
         self.rules: List[RuleBase] = []
         self.hooks: Dict[str, List[Callable]] = {
             "before_first_query": [],
@@ -76,6 +74,30 @@ class NameServer:
         Note: that all rules are internally converted to a BlueprintRule.
         """
         raise NotImplementedError()
+
+    def register_before_first_query(self, func) -> None:
+        """Register a function to be run before the first query.
+        """
+        self.hooks["before_first_query"].append(func)
+        return
+
+    def register_before_query(self, func) -> None:
+        """Register a function to be run before every query.
+
+        If `func` returns anything other than null will stop processing the
+        incoming query and continue to result processing with the return value.
+        """
+        self.hooks["before_query"].append(func)
+        return
+
+    def register_after_query(self, func) -> None:
+        """Register a function to be run on the result of a query.
+
+        `func` must accept an instance of `Response` and must return an instance
+        of `Response`. It can do nothing, modify or replace the response.
+        """
+        self.hooks["after_query"].append(func)
+        return
 
     def run(self) -> None:
         # Setup Logging
@@ -129,7 +151,7 @@ class NameServer:
 
     ## Decorators
     ## -------------------------------------------------------------------------
-    def rule(self, rule_, allowed_qtypes):
+    def rule(self, rule_, allowed_qtypes):  # pylint: disable=unused-argument
         """Decorator for registering a function as a rule.
 
         If regex, then RegexRule, if str then WildcardStringRule.
@@ -150,28 +172,43 @@ class NameServer:
 
         return decorator
 
-    def before_first_query(self, func, *args, **kwargs):
+    def before_first_query(self):
         """Decorator for registering before_first_query hook.
 
         These functions are called when the server receives it's first query, but
         before any further processesing.
         """
-        raise NotImplementedError()
 
-    def before_query(self, func, *args, **kwargs):
+        def decorator(func):
+            self.register_before_first_query(func)
+            return func
+
+        return decorator
+
+    def before_query(self):
         """Decorator for registering before_query hook.
 
         These functions are called before processing each query.
         """
-        raise NotImplementedError()
 
-    def after_query(self, func, *args, **kwargs):
+        def decorator(func):
+            self.register_before_query(func)
+            return func
+
+        return decorator
+
+    def after_query(self):
         """Decorator for registering after_query hook.
 
         These functions are after the rule function is run and may modify the
         response.
         """
-        raise NotImplementedError()
+
+        def decorator(func):
+            self.register_after_query(func)
+            return func
+
+        return decorator
 
     ## Internal Functions
     ## -------------------------------------------------------------------------
@@ -184,9 +221,14 @@ class NameServer:
 
         # pylint: disable=too-many-branches
 
+        # We run before_first_query hook here so that _process_dns_record can be
+        # called without the underlying server existing.
         if not self._before_first_query_run:
-            # Not implemented (might move to s
             self._debug("Running before_first_query")
+            self._before_first_query_run = True  # If we error everything dies anyway
+            for func in self.hooks["before_first_query"]:
+                self._vdebug(f"Running before_first_query func: {func}")
+                func()
 
         response = message.reply()
 
@@ -214,7 +256,7 @@ class NameServer:
                 result = hook(query)
                 if result is not None:
                     # before_request hook returned a response, stop processing
-                    self._debug(f"Matched before_hook: {hook}")
+                    self._debug(f"Got result from before_hook: {hook}")
                     break
             else:
                 # No hook returned a response
