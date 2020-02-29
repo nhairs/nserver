@@ -50,7 +50,7 @@ replace_version_var BUILD_GIT_BRANCH "${GIT_BRANCH}" 1
 replace_version_var BUILD_TIMESTAMP "${BUILD_TIMESTAMP}" 1
 replace_version_var BUILD_DATETIME "${BUILD_DATETIME}" 0
 
-head -n 22 src/python_template/_version.py | tail -n 7
+head -n 22 "src/${PACKAGE_PYTHON_NAME}/_version.py" | tail -n 7
 
 if [ "$PYTHON_PACKAGE_REPOSITORY" == "testpypi" ]; then
     echo "MODIFYING PACKAGE_NAME"
