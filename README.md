@@ -108,7 +108,7 @@ TLDR: Please [submit an issue on github](https://github.com/nhairs/nserver/issue
 
 In the case of bug reports, please help me help you by following best practices [1](https://marker.io/blog/write-bug-report/) [2](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html).
 
-In the case of feature requests, please provide background to the problem you are trying to solve so to help find a solution that makes the most sense for the library as well as your usecase. Before making a feature request consider looking at (my poorly written) [design notes](https://github.com/nhairs/nserver/blob/master/DESIGN_NOTES.md).
+In the case of feature requests, please provide background to the problem you are trying to solve so to help find a solution that makes the most sense for the library as well as your usecase. Before making a feature request consider looking at my (roughly written) [design notes](https://github.com/nhairs/nserver/blob/master/DESIGN_NOTES.md).
 
 ## Development
 The only development dependency is bash and docker. All actions are run within docker for ease of use. See `./dev.sh help` for commands. Typical commands are `format`, `lint`, `test`, `repl`, `build`.
