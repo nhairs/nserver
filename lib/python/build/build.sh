@@ -17,10 +17,10 @@ fi
 function replace_version_var {
     if [ $3 ]; then
         # Quotes
-        sed -i "s/^${1} = \"\"/${1} = \"${2}\"/" src/python_template/_version.py
+        sed -i "s/^${1} = \"\"/${1} = \"${2}\"/" "src/${PACKAGE_PYTHON_NAME}/_version.py"
     else
-        # Quotes
-        sed -i "s/^${1} = \"\"/${1} = ${2}/" src/python_template/_version.py
+        # No Quotes
+        sed -i "s/^${1} = \"\"/${1} = ${2}/" "src/${PACKAGE_PYTHON_NAME}/_version.py"
     fi
 }
 
