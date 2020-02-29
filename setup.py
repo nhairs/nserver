@@ -70,7 +70,7 @@ PACKAGE_URL = "https://github.com/nhairs/nserver"
 
 PACKAGE_AUTHOR = "Nicholas Hairs"
 
-PACKAGE_AUTHOR_EMAIL = None
+PACKAGE_AUTHOR_EMAIL = "info+nserver@nicholashairs.com"
 
 PACKAGE_DEPENDENCIES = [
     "dnslib",
@@ -103,12 +103,14 @@ EXCLUDE_PACKAGE_DATA = None
 # to a package repository like PyPI
 #   - https://pypi.org/classifiers/
 PACKAGE_CLASSIFIERS = [
-    "Programming Language :: Python :: 3 :: Only",  # This template is 3.5+
-    # "Programming Language :: Python :: 3.5",
-    # "Programming Language :: Python :: 3.6",
-    # "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
     # Consider adding 3.8, 3.9 as they become available and are tested.
     "Development Status :: 3 - Alpha",  # Default to Alpha.
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Internet",
+    "Topic :: Internet :: Name Service (DNS)",
 ]
 
 # Comma seperated list of keywords describing the package that can be used by
@@ -171,7 +173,7 @@ PACKAGE_LICENCE = None
 #
 # Note: This package template has been designed only for the versions below and
 # is unlikely to work older versions of python (e.g. 2.7)
-PYTHON_VERSIONS = ">=3.5, <4"
+PYTHON_VERSIONS = ">=3.6, <4"
 
 # Developer notes: If you increase the minimum version you should also change:
 #   - black target
