@@ -3,7 +3,7 @@
 ### CONSTANTS
 ### ============================================================================
 BUILD_TIMESTAMP=$(date +%s)
-BUILD_DATETIME="datetime.utcfromtimestamp(${BUILD_TIMESTAMP})"
+BUILD_DATETIME="datetime.datetime.utcfromtimestamp(${BUILD_TIMESTAMP})"
 PACKAGE_VERSION=$(grep '^PACKAGE_VERSION' setup.py | cut -d '"' -f 2)
 
 if [[ "$GIT_BRANCH" == "master" ]]; then
@@ -15,7 +15,7 @@ fi
 ### FUNCTIONS
 ### ============================================================================
 function replace_version_var {
-    if [ $3 ]; then
+    if [ $3 == 1 ]; then
         # Quotes
         sed -i "s/^${1} = \"\"/${1} = \"${2}\"/" "src/${PACKAGE_PYTHON_NAME}/_version.py"
     else
@@ -47,7 +47,7 @@ replace_version_var BUILD_VERSION "${BUILD_VERSION}" 1
 replace_version_var BUILD_GIT_HASH "${GIT_COMMIT}" 1
 replace_version_var BUILD_GIT_HASH_SHORT "${GIT_COMMIT_SHORT}" 1
 replace_version_var BUILD_GIT_BRANCH "${GIT_BRANCH}" 1
-replace_version_var BUILD_TIMESTAMP "${BUILD_TIMESTAMP}" 1
+replace_version_var BUILD_TIMESTAMP "${BUILD_TIMESTAMP}" 0
 replace_version_var BUILD_DATETIME "${BUILD_DATETIME}" 0
 
 head -n 22 "src/${PACKAGE_PYTHON_NAME}/_version.py" | tail -n 7
@@ -58,6 +58,8 @@ if [ "$PYTHON_PACKAGE_REPOSITORY" == "testpypi" ]; then
     # https://packaging.python.org/tutorials/packaging-projects/#creating-setup-py
     sed -i "s/^PACKAGE_NAME = .*/PACKAGE_NAME = \"${PACKAGE_NAME}-${TESTPYPI_USERNAME}\"/" setup.py
     grep "^PACKAGE_NAME = " setup.py
+
+    mv "src/${PACKAGE_PYTHON_NAME}" "src/${PACKAGE_PYTHON_NAME}_$(echo -n $TESTPYPI_USERNAME | tr '-' '_')"
 fi
 
 ## Build

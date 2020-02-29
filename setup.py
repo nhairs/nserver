@@ -192,7 +192,7 @@ else:
 # See also:
 #   - https://setuptools.readthedocs.io/en/latest/setuptools.html#using-find-packages
 FIND_PACKAGES_EXCLUDE = []
-FIND_PACKAGES_INCLUDE = [PACKAGE_PYTHON_NAME + ".*"]
+FIND_PACKAGES_INCLUDE = [PACKAGE_PYTHON_NAME, PACKAGE_PYTHON_NAME + ".*"]
 
 # Set the URL for which THIS VERSION of the package can be downloaded.
 # See also:
