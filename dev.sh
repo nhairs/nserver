@@ -9,7 +9,11 @@ set -e  # Bail at the first sign of trouble
 
 ### CONTANTS
 ### ============================================================================
-GIT_COMMIT=$(git rev-parse --short HEAD)
+SOURCE_UID=$(id -u)
+SOURCE_GID=$(id -g)
+GIT_COMMIT_SHORT=$(git rev-parse --short HEAD)
+GIT_COMMIT=$(git rev-parse HEAD)
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 PACKAGE_NAME=$(grep 'PACKAGE_NAME =' setup.py | cut -d '=' -f 2 | tr -d ' ' | tr -d '"')
 PACKAGE_PYTHON_NAME=$(echo -n "$PACKAGE_NAME" | tr '-' '_')
 
@@ -17,6 +21,9 @@ AUTOCLEAN_LIMIT=10
 
 # Notation Reference: https://unix.stackexchange.com/questions/122845/using-a-b-for-variable-assignment-in-scripts#comment685330_122848
 : ${CI:=0}  # Flag for if we are in CI - default to not.
+
+PYTHON_PACKAGE_REPOSITORY="testpypi"
+TESTPYPI_USERNAME="nhairs-test"
 
 ### FUNCTIONS
 ### ============================================================================
@@ -33,19 +40,37 @@ function docker_build {
         --file "lib/${1}" \
         --build-arg "PACKAGE_NAME=${PACKAGE_NAME}" \
         --build-arg "PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}" \
+        --build-arg "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}" \
+        --build-arg "GIT_COMMIT=${GIT_COMMIT}" \
+        --build-arg "GIT_BRANCH=${GIT_BRANCH}" \
+        --build-arg "PYTHON_PACKAGE_REPOSITORY=${PYTHON_PACKAGE_REPOSITORY}" \
+        --build-arg "TESTPYPI_USERNAME=${TESTPYPI_USERNAME}" \
+        --build-arg "SOURCE_UID=${SOURCE_UID}" \
+        --build-arg "SOURCE_GID=${SOURCE_GID}" \
         --tag "$(get_docker_tag "$2")" \
         .
 }
 
 function docker_run {
-    echo "🐋 running $1\n"
+    echo "🐋 running $1"
     docker run --rm \
         --name "$(get_docker_tag "$1" | tr ":" "-")" \
         --volume "$(pwd):/srv" \
         "$(get_docker_tag "$1")"
 }
 
+function docker_run_build {
+    # Specialised function for build
+    # mounts only dist instead of .
+    echo "🐋 running $1"
+    docker run --rm \
+        --name "$(get_docker_tag "$1" | tr ":" "-")" \
+        --volume "$(pwd)/dist:/srv/dist" \
+        "$(get_docker_tag "$1")"
+}
+
 function docker_run_interactive {
+    echo "🐋 running $1"
     docker run --rm \
         --interactive \
         --tty \
@@ -147,11 +172,32 @@ case $1 in
         ;;
 
     "build")
-        echo "WARNING: Not implemented"
+        # TODO: unstashed changed guard
+        if [ ! -d dist ]; then
+            heading "setup 📜"
+            mkdir dist
+        fi
+
+        heading "build 🐍"
+        docker_build "python/build/build.Dockerfile" build
+        docker_run_build build
         ;;
 
     "upload")
-        echo "WARNING: Not implemented"
+        heading "Upload to ${PYTHON_PACKAGE_REPOSITORY}"
+        heading "setup 📜"
+        pip3 install --user keyrings.alt
+        pip3 install --user twine
+
+        if [ ! -d dist_uploaded ]; then
+            mkdir dist_uploaded
+        fi
+
+        heading "upload 📜"
+        twine upload --repository "${PYTHON_PACKAGE_REPOSITORY}" dist/*
+
+        echo "📜 cleanup"
+        mv dist/* dist_uploaded
         ;;
 
     "repl")
@@ -161,7 +207,7 @@ case $1 in
         ;;
 
     "clean")
-        heading "Cleaning"
+        heading "Cleaning 📜"
         docker_clean
 
         echo "🐍 pyclean"
@@ -174,10 +220,16 @@ case $1 in
         ;;
 
     "debug")
-        heading "Debug"
-        echo "GIT_COMMIT=${GIT_COMMIT}"
+        heading "Debug 📜"
         echo "PACKAGE_NAME=${PACKAGE_NAME}"
         echo "PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}"
+        echo "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}"
+        echo "GIT_COMMIT=${GIT_COMMIT}"
+        echo "GIT_BRANCH=${GIT_BRANCH}"
+        echo "PYTHON_PACKAGE_REPOSITORY=${PYTHON_PACKAGE_REPOSITORY}"
+        echo "TESTPYPI_USERNAME=${TESTPYPI_USERNAME}"
+        echo "SOURCE_UID=${SOURCE_UID}"
+        echo "SOURCE_GID=${SOURCE_GID}"
         echo
         echo "Checking Directory Layout..."
         check_file "src/${PACKAGE_PYTHON_NAME}/__init__.py"
