@@ -11,8 +11,6 @@ In theory this should support public (e.g. google.com) or private (e.g. acme.cor
 ### Why pass query to view function?
 Ease of implementation. Whilst I want to do something like Flask.request in the future, this is not in scope for MVP.
 
-### Static Hostname in NServer.
-Makes things simple for now.
 
 ## TODO
 - Unicode support
