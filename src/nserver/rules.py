@@ -105,7 +105,7 @@ class WildcardStringRule(RuleBase):
                 regex_parts.append(r"[a-z0-9\-\_]+")
             elif part == "**":
                 # Extended part match
-                regex_parts.append(r"(?:[a-z0-9\-\_]+\.)+(?:[a-z0-9\-\_]+)")
+                regex_parts.append(r"(?:[a-z0-9\-\_]+\.)*(?:[a-z0-9\-\_]+)")
             else:
                 regex_parts.append(re.escape(part))
 
