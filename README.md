@@ -11,12 +11,12 @@ NServer is currently Alpha software and does not have complete documentation, te
 
 ## Installation
 Install via pip
-```lang=sh
+```shell
 pip3 install nserver
 ```
 
 ## Quick Start
-```lang=py
+```python
 from nserver import NameServer, Response, A, NS
 
 ns = NameServer("example")
