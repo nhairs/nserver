@@ -93,7 +93,9 @@ PACKAGE_EXTRA_DEPENDENCIES = {}
 # Include package data.
 # See also:
 #   - https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files
-INCLUDE_PACKAGE_DATA = None
+INCLUDE_PACKAGE_DATA = {
+    PACKAGE_NAME: ["py.typed"],
+}
 
 PACKAGE_DATA_FILES = None
 
