@@ -130,8 +130,6 @@ function check_file {
 
 ### MAIN
 ### ============================================================================
-docker_autoclean
-
 case $1 in
 
     "format")
@@ -186,8 +184,10 @@ case $1 in
     "upload")
         heading "Upload to ${PYTHON_PACKAGE_REPOSITORY}"
         heading "setup 📜"
-        pip3 install --user keyrings.alt
-        pip3 install --user twine
+        if [[ -z $(pip3 list | grep keyrings.alt) ]]; then
+            pip3 install --user keyrings.alt
+            pip3 install --user twine
+        fi
 
         if [ ! -d dist_uploaded ]; then
             mkdir dist_uploaded
@@ -262,3 +262,5 @@ case $1 in
         exit 255
         ;;
 esac
+
+docker_autoclean
