@@ -11,7 +11,7 @@ import dnslib
 ## Application
 from .rules import RuleBase, WildcardStringRule, RegexRule
 from .models import Query, Response
-from .transport import UDPv4Transport, TCPv4Transport, TransportBase
+from .transport import UDPv4Transport, TCPv4Transport, TransportBase, InvalidMessageError
 from .records import RecordBase
 
 ### NAME SERVER
@@ -36,7 +36,7 @@ class NameServer:
             "before_query": [],
             "after_query": [],
         }
-        self._logger = logging.getLogger(f"nserver.instance.{self.name}")
+        self._logger = logging.getLogger(f"nserver.i.{self.name}")
         self._before_first_query_run = False
 
         self.settings = Namespace()
@@ -49,6 +49,7 @@ class NameServer:
         self.settings.REMOTE_ADMIN = False
         self.settings.CONSOLE_LOG_LEVEL = logging.INFO
         self.settings.FILE_LOG_LEVEL = logging.INFO
+        self.settings.MAX_ERRORS = 5
 
         self.shutdown_server = False
         return
@@ -126,20 +127,28 @@ class NameServer:
 
         self._info(f"Starting {server}")
         server.start_server()
+        error_count = 0
 
         # Process Requests
-        try:
-            while True:
-                if self.shutdown_server:
-                    break
+        while True:
+            if self.shutdown_server:
+                break
+            try:
                 message = server.receive_message()
                 response = self._process_dns_record(message.message)
                 message.response = response
                 server.send_message_response(message)
-        except Exception as e:  # pylint: disable=broad-except
-            self._critical(f"Uncaught error occured. {e}", exc_info=True)
-        except KeyboardInterrupt:
-            self._info(f"KeyboardInterrupt received.")
+            except InvalidMessageError as e:
+                self._warning(f"{e}")
+            except Exception as e:  # pylint: disable=broad-except
+                self._error(f"Uncaught error occured. {e}", exc_info=True)
+                error_count += 1
+                if error_count >= self.settings.MAX_ERRORS:
+                    self._critical(f"Max errors hit ({error_count})")
+                    self.shutdown_server = True
+            except KeyboardInterrupt:
+                self._info(f"KeyboardInterrupt received.")
+                self.shutdown_server = True
 
         # Stop Server
         self._info("Shutting down server")

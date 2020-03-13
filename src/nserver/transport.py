@@ -1,6 +1,7 @@
 ### IMPORTS
 ### ============================================================================
 ## Standard Library
+import base64
 import socket
 import struct
 import time
@@ -26,12 +27,15 @@ class MessageContainer:
         raw_data: bytes,
         socket_: Optional[socket.socket],
         socket_type: str,
-        remote_address: Tuple[str, str],
+        remote_address: Tuple[str, int],
     ):
         if socket_type not in self.SOCKET_TYPES:
             raise ValueError(f"Unkown socket_type {socket_type!r}")
 
-        self.message = dnslib.DNSRecord.parse(raw_data)
+        try:
+            self.message = dnslib.DNSRecord.parse(raw_data)
+        except dnslib.dns.DNSError as e:
+            raise InvalidMessageError(e, raw_data, remote_address)
         self.socket = socket_
         self.socket_type = socket_type
         self.remote_address = remote_address
@@ -42,6 +46,19 @@ class MessageContainer:
         if self.response is None:
             raise RuntimeError("response not set!")
         return self.response.pack()
+
+
+class InvalidMessageError(ValueError):
+    """Class for holding invalid messages.
+    """
+
+    def __init__(self, error: dnslib.dns.DNSError, raw_data: bytes, remote_address: Tuple[str, int]):
+        encoded_data = base64.b64encode(raw_data).decode("ascii")
+        self.message = f"{error} Remote: {remote_address} Bytes: {encoded_data}"
+        return
+
+    def __str__(self) -> str:
+        return self.message
 
 
 ## Transport Classes
