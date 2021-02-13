@@ -39,6 +39,7 @@ class RecordBase:
         return
 
     def to_resource_record(self) -> dnslib.RR:
+        """Convert Record to a dnslib Resource Record"""
         resource_record = dnslib.RR(
             rname=self.resource_name,
             rtype=self._qtype,
@@ -49,17 +50,13 @@ class RecordBase:
 
 
 class A(RecordBase):  # pylint: disable=invalid-name
-    """A (IPv4) Record.
-    """
+    """A (IPv4) Record."""
 
     def __init__(self, name: str, ip: Union[str, IPv4Address], ttl: int = None):
         super().__init__(name, ttl)
 
         if isinstance(ip, str):
-            try:
-                ip = IPv4Address(ip)
-            except ValueError:
-                raise ValueError("Invalid IPv4 Address")
+            ip = IPv4Address(ip)
 
         # Consider support int
 
@@ -68,25 +65,20 @@ class A(RecordBase):  # pylint: disable=invalid-name
 
 
 class AAAA(RecordBase):
-    """AAAA (IPv6) Record.
-    """
+    """AAAA (IPv6) Record."""
 
     def __init__(self, name: str, ip: Union[str, IPv6Address], ttl: int = None):
         super().__init__(name, ttl)
 
         if isinstance(ip, str):
-            try:
-                ip = IPv6Address(ip)
-            except ValueError:
-                raise ValueError("Invalid IPv6 Address")
+            ip = IPv6Address(ip)
 
         self._record_kwargs = {"data": str(ip)}
         return
 
 
 class MX(RecordBase):
-    """MX Record.
-    """
+    """MX Record."""
 
     def __init__(self, name: str, domain: str, priority: int = 10, ttl: int = None):
         super().__init__(name, ttl)
@@ -96,8 +88,7 @@ class MX(RecordBase):
 
 
 class TXT(RecordBase):
-    """TXT Record.
-    """
+    """TXT Record."""
 
     def __init__(self, name: str, text: str, ttl: int = None):
         super().__init__(name, ttl)
@@ -122,9 +113,10 @@ class TXT(RecordBase):
 
 
 class CNAME(RecordBase):
-    """CNAME Record.
-    """
+    """CNAME Record."""
 
+    # We use regex instead of something like tldextract to allow for internal
+    # domains that do not end in a "real" TLD.
     regex = re.compile(r"(?:[a-z0-9\-\_]+\.)+(?:[a-z0-9\-\_]+)\.?")
 
     def __init__(self, name: str, domain: str, ttl: int = None):
@@ -139,16 +131,14 @@ class CNAME(RecordBase):
 
 
 class NS(CNAME):
-    """Name Server Record.
-    """
+    """Name Server Record."""
 
     # Functions the same as a CNAME record.
     # https://github.com/paulc/dnslib/blob/master/dnslib/dns.py
 
 
 class PTR(CNAME):
-    """Pointer Record.
-    """
+    """Pointer Record."""
 
     # Functions the same as a CNAME record.
     # https://github.com/paulc/dnslib/blob/master/dnslib/dns.py
@@ -178,14 +168,19 @@ class SOA(RecordBase):
         self._record_kwargs = {
             "mname": primary_name_server,
             "rname": admin_email,  # TODO: parse this for usability
-            "times": (zone_serial, refresh_period, retry_period, expires, minimum_ttl,),
+            "times": (
+                zone_serial,
+                refresh_period,
+                retry_period,
+                expires,
+                minimum_ttl,
+            ),
         }
         return
 
 
 class SRV(RecordBase):
-    """SRV Record.
-    """
+    """SRV Record."""
 
     def __init__(  # pylint: disable=too-many-arguments
         self, name: str, priority: int, weight: int, port: int, target: str, ttl: int = None

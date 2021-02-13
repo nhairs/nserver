@@ -14,7 +14,7 @@ import dnslib
 
 ### CLASSES
 ### ============================================================================
-class MessageContainer:
+class MessageContainer:  # pylint: disable=too-few-public-methods
     """Class for holding DNS messages and the socket they originated from.
 
     Used to simplify the interface (and allow for threading etc later).
@@ -35,7 +35,7 @@ class MessageContainer:
         try:
             self.message = dnslib.DNSRecord.parse(raw_data)
         except dnslib.dns.DNSError as e:
-            raise InvalidMessageError(e, raw_data, remote_address)
+            raise InvalidMessageError(e, raw_data, remote_address) from e
         self.socket = socket_
         self.socket_type = socket_type
         self.remote_address = remote_address
@@ -43,43 +43,48 @@ class MessageContainer:
         return
 
     def get_response_bytes(self):
+        """Convert response object to bytes"""
         if self.response is None:
             raise RuntimeError("response not set!")
         return self.response.pack()
 
 
 class InvalidMessageError(ValueError):
-    """Class for holding invalid messages.
-    """
+    """Class for holding invalid messages."""
 
-    def __init__(self, error: dnslib.dns.DNSError, raw_data: bytes, remote_address: Tuple[str, int]):
+    def __init__(
+        self, error: dnslib.dns.DNSError, raw_data: bytes, remote_address: Tuple[str, int]
+    ):
         encoded_data = base64.b64encode(raw_data).decode("ascii")
-        self.message = f"{error} Remote: {remote_address} Bytes: {encoded_data}"
+        message = f"{error} Remote: {remote_address} Bytes: {encoded_data}"
+        super().__init__(message)
         return
-
-    def __str__(self) -> str:
-        return self.message
 
 
 ## Transport Classes
 ## -----------------------------------------------------------------------------
 class TransportBase:
+    """Base class for all transports"""
+
     def start_server(self, timeout=60) -> None:
+        """Start transport's server"""
         raise NotImplementedError()
 
     def stop_server(self) -> None:
+        """Stop transport's server"""
         raise NotImplementedError()
 
     def receive_message(self) -> MessageContainer:
+        """Receive a message from the running server"""
         raise NotImplementedError()
 
     def send_message_response(self, message: MessageContainer) -> None:
+        """Respond to a message that was received by the server"""
         raise NotImplementedError()
 
 
 class UDPv4Transport(TransportBase):
-    """Transport class for IPv4 UDP.
-    """
+    """Transport class for IPv4 UDP."""
 
     SOCKET_TYPE = "UDPv4"
 

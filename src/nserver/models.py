@@ -13,6 +13,8 @@ from .records import RecordBase
 ### ============================================================================
 class Query:  # pylint: disable=too-few-public-methods
     """Simplified version of a DNS query.
+
+    This class acts as an adaptor for dnslib classes.
     """
 
     def __init__(self, type_: str, name: str) -> None:
@@ -25,6 +27,7 @@ class Query:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def from_dns_question(cls, question):
+        """Create a new query from a dnslib dns question"""
         query = cls(dnslib.QTYPE[question.qtype], str(question.qname).rstrip("."))
         return query
 
@@ -42,6 +45,8 @@ OptionalRecordList = Optional[Union[RecordBase, List[RecordBase]]]
 
 class Response:
     """Simplified version of a DNS response.
+
+    This class acts as an adaptor for dnslib classes.
     """
 
     def __init__(
@@ -81,10 +86,13 @@ class Response:
         return self.__repr__()
 
     def get_answer_records(self) -> List[dnslib.RD]:
+        """Prepare resource records for answer section"""
         return [record.to_resource_record() for record in self.answers]
 
     def get_additional_records(self) -> List[dnslib.RD]:
+        """Prepare resource records for additional section"""
         return [record.to_resource_record() for record in self.additional]
 
     def get_authority_records(self) -> List[dnslib.RD]:
+        """Prepare resource records for authority section"""
         return [record.to_resource_record() for record in self.authority]

@@ -18,8 +18,7 @@ ResponseFunction = Callable[[Query], Any]  # Note: change Any to Union later
 
 
 class RuleBase:
-    """Base class for all Rules to inherit from.
-    """
+    """Base class for all Rules to inherit from."""
 
     def get_func(self, query: Query) -> Optional[ResponseFunction]:
         """From the given query return the function to run, if any.
@@ -34,8 +33,7 @@ class RuleBase:
 
 
 class RegexRule(RuleBase):
-    """Rule that uses the provided regex to attempt to match the query name.
-    """
+    """Rule that uses the provided regex to attempt to match the query name."""
 
     def __init__(self, regex: Pattern, allowed_qtypes: List, func: ResponseFunction) -> None:
         # TODO: Consider allowing strings and then compiling to regex since can

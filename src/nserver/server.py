@@ -17,9 +17,7 @@ from .records import RecordBase
 ### NAME SERVER
 ### ============================================================================
 class NameServer:
-    """NameServer for responding to requests.
-
-    """
+    """NameServer for responding to requests."""
 
     # pylint: disable=too-many-instance-attributes
 
@@ -55,8 +53,7 @@ class NameServer:
         return
 
     def register_rule(self, rule: RuleBase) -> None:
-        """Register the given rule.
-        """
+        """Register the given rule."""
         self._debug(f"Registered rule: {rule!r}")
         self.rules.append(rule)
         return
@@ -77,8 +74,7 @@ class NameServer:
         raise NotImplementedError()
 
     def register_before_first_query(self, func) -> None:
-        """Register a function to be run before the first query.
-        """
+        """Register a function to be run before the first query."""
         self.hooks["before_first_query"].append(func)
         return
 
@@ -101,6 +97,7 @@ class NameServer:
         return
 
     def run(self) -> None:
+        """Start running the server"""
         # Setup Logging
         console_logger = logging.StreamHandler()
         console_logger.setLevel(self.settings.CONSOLE_LOG_LEVEL)
@@ -147,7 +144,7 @@ class NameServer:
                     self._critical(f"Max errors hit ({error_count})")
                     self.shutdown_server = True
             except KeyboardInterrupt:
-                self._info(f"KeyboardInterrupt received.")
+                self._info("KeyboardInterrupt received.")
                 self.shutdown_server = True
 
         # Stop Server
@@ -171,7 +168,12 @@ class NameServer:
             nonlocal allowed_qtypes
             if isinstance(rule_, str):
                 rule_ = WildcardStringRule(rule_, allowed_qtypes, func)
-            elif isinstance(rule_, Pattern):
+            elif isinstance(  # pylint: disable=isinstance-second-argument-not-valid-type
+                rule_, Pattern
+            ):
+                # Note: I've disabled thiss type check thing as it currently works and it might
+                # vary between versions of python and other bugs.
+                # see also: https://stackoverflow.com/questions/6102019/type-of-compiled-regex-object-in-python
                 rule_ = RegexRule(rule_, allowed_qtypes, func)
             else:
                 raise ValueError(f"Could not handle rule: {rule_!r}")
@@ -319,43 +321,36 @@ class NameServer:
     ## Logging
     ## -------------------------------------------------------------------------
     def _vvdebug(self, *args, **kwargs):
-        """Log very verbose debug message.
-        """
+        """Log very verbose debug message."""
 
         return self._logger.log(6, *args, **kwargs)
 
     def _vdebug(self, *args, **kwargs):
-        """Log verbose debug message.
-        """
+        """Log verbose debug message."""
 
         return self._logger.log(8, *args, **kwargs)
 
     def _debug(self, *args, **kwargs):
-        """Log debug message.
-        """
+        """Log debug message."""
 
         return self._logger.debug(*args, **kwargs)
 
     def _info(self, *args, **kwargs):
-        """Log very verbose debug message.
-        """
+        """Log very verbose debug message."""
 
         return self._logger.info(*args, **kwargs)
 
     def _warning(self, *args, **kwargs):
-        """Log warning message.
-        """
+        """Log warning message."""
 
         return self._logger.warning(*args, **kwargs)
 
     def _error(self, *args, **kwargs):
-        """Log an error message.
-        """
+        """Log an error message."""
 
         return self._logger.error(*args, **kwargs)
 
     def _critical(self, *args, **kwargs):
-        """Log a critical message.
-        """
+        """Log a critical message."""
 
         return self._logger.critical(*args, **kwargs)
