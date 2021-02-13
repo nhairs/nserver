@@ -194,3 +194,38 @@ class SRV(RecordBase):
             "target": target,
         }
         return
+
+
+class CAA(RecordBase):
+    """Certificate Authority Authorisation Record
+
+    refs:
+        - https://tools.ietf.org/html/rfc6844
+        - https://support.dnsimple.com/articles/caa-record/
+    """
+
+    VALID_TAGS = {"issue", "issuewild", "iodef"}
+
+    def __init__(
+        self, name: str, flags: int, tag: str, value: str, ttl: int = None
+    ):  # pylint: disable=too-many-arguments
+        """Create a new CAA Record
+
+        name: domain name this record applies to
+        flags: 8bit numbers for flags
+        tag: type of CAA record
+        value: value for given tag (see RFC for more info)
+        """
+        super().__init__(name, ttl)
+
+        if tag not in self.VALID_TAGS:
+            raise ValueError(f"invalid tag {tag} must be one of {self.VALID_TAGS}")
+
+        # consider add validation for values
+
+        self._record_kwargs = {
+            "flags": flags,
+            "tag": tag,
+            "value": value,
+        }
+        return
