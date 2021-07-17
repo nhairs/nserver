@@ -157,7 +157,7 @@ class NameServer:
 
     ## Decorators
     ## -------------------------------------------------------------------------
-    def rule(self, rule_, allowed_qtypes):  # pylint: disable=unused-argument
+    def rule(self, rule_, allowed_qtypes, case_sensitive=False):  # pylint: disable=unused-argument
         """Decorator for registering a function as a rule.
 
         If regex, then RegexRule, if str then WildcardStringRule.
@@ -166,15 +166,18 @@ class NameServer:
         def decorator(func):
             nonlocal rule_
             nonlocal allowed_qtypes
+            nonlocal case_sensitive
             if isinstance(rule_, str):
-                rule_ = WildcardStringRule(rule_, allowed_qtypes, func)
+                rule_ = WildcardStringRule(
+                    rule_, allowed_qtypes, func, case_sensitive=case_sensitive
+                )
             elif isinstance(  # pylint: disable=isinstance-second-argument-not-valid-type
                 rule_, Pattern
             ):
                 # Note: I've disabled thiss type check thing as it currently works and it might
                 # vary between versions of python and other bugs.
                 # see also: https://stackoverflow.com/questions/6102019/type-of-compiled-regex-object-in-python
-                rule_ = RegexRule(rule_, allowed_qtypes, func)
+                rule_ = RegexRule(rule_, allowed_qtypes, func, case_sensitive=case_sensitive)
             else:
                 raise ValueError(f"Could not handle rule: {rule_!r}")
 

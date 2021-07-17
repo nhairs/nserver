@@ -24,7 +24,7 @@ class RuleBase:
         """From the given query return the function to run, if any.
 
         If no function should be run (i.e. because it does not match the rule),
-        then reutrn None.
+        then return None.
 
         This is to allow more efficient methods when determining a match and
         getting the rule function may be expensive (e.g. blueprints).
@@ -33,21 +33,36 @@ class RuleBase:
 
 
 class RegexRule(RuleBase):
-    """Rule that uses the provided regex to attempt to match the query name."""
+    """Rule that uses the provided regex to attempt to match the query name.
 
-    def __init__(self, regex: Pattern, allowed_qtypes: List, func: ResponseFunction) -> None:
+    When operating with `case_sensitive=False`, the query name is converted to
+    lowercase prior to matching. The regex must expect that the queries will all
+    be lowercased (i.e. the regex is NOT automatically converted).
+    """
+
+    def __init__(
+        self,
+        regex: Pattern,
+        allowed_qtypes: List,
+        func: ResponseFunction,
+        case_sensitive: bool = False,
+    ) -> None:
         # TODO: Consider allowing strings and then compiling to regex since can
         # test for regex types: `if isinsance(regex, Pattern)`
 
-        self.regex = regex
+        self.regex = regex  # TODO: find way to make regex "lowercase"
         self.allowed_qtypes = set(allowed_qtypes)
         self.func = func
+        self.case_sensitive = case_sensitive
         return
 
     def get_func(self, query):
         if query.type not in self.allowed_qtypes:
             return None
-        if self.regex.fullmatch(query.name):
+
+        query_name = query.name if self.case_sensitive else query.name.lower()
+
+        if self.regex.fullmatch(query_name):
             return self.func
         return None
 
@@ -65,19 +80,32 @@ class WildcardStringRule(RuleBase):
         _dmarc.{base_domain}
         *._dkim.**
         foo.*.bar.com
+
+    When operating with `case_sensitive=False`, both the wildcard string and the
+    query name are covereted to lowercase prior to matching.
     """
 
-    def __init__(self, wildcard_string: str, allowed_qtypes: List, func: ResponseFunction) -> None:
-        self.wildcard_string = wildcard_string
+    def __init__(
+        self,
+        wildcard_string: str,
+        allowed_qtypes: List,
+        func: ResponseFunction,
+        case_sensitive: bool = False,
+    ) -> None:
+        self.wildcard_string = wildcard_string if case_sensitive else wildcard_string.lower()
         self.allowed_qtypes = allowed_qtypes
         self.func = func
+        self.case_sensitive = case_sensitive
         return
 
     def get_func(self, query):
         if query.type not in self.allowed_qtypes:
             return None
-        regex = self._get_regex(query.name)
-        if regex.fullmatch(query.name):
+
+        query_name = query.name if self.case_sensitive else query.name.lower()
+
+        regex = self._get_regex(query_name)
+        if regex.fullmatch(query_name):
             return self.func
         return None
 
@@ -100,10 +128,16 @@ class WildcardStringRule(RuleBase):
         for part in self.wildcard_string.format(**sub_vars).split("."):
             if part == "*":
                 # Single part match
-                regex_parts.append(r"[a-z0-9\-\_]+")
+                if self.case_sensitive:
+                    regex_parts.append(r"[a-zA-Z0-9\-\_]+")
+                else:
+                    regex_parts.append(r"[a-z0-9\-\_]+")
             elif part == "**":
                 # Extended part match
-                regex_parts.append(r"(?:[a-z0-9\-\_]+\.)*(?:[a-z0-9\-\_]+)")
+                if self.case_sensitive:
+                    regex_parts.append(r"(?:[a-zA-Z0-9\-\_]+\.)*(?:[a-zA-Z0-9\-\_]+)")
+                else:
+                    regex_parts.append(r"(?:[a-z0-9\-\_]+\.)*(?:[a-z0-9\-\_]+)")
             else:
                 regex_parts.append(re.escape(part))
 
