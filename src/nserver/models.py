@@ -28,6 +28,9 @@ class Query:  # pylint: disable=too-few-public-methods
     @classmethod
     def from_dns_question(cls, question):
         """Create a new query from a dnslib dns question"""
+        if question.qtype not in dnslib.QTYPE.forward:
+            raise ValueError(f"Invalid QTYPE: {question.qtype}")
+
         query = cls(dnslib.QTYPE[question.qtype], str(question.qname).rstrip("."))
         return query
 

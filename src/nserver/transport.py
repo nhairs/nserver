@@ -53,7 +53,7 @@ class InvalidMessageError(ValueError):
     """Class for holding invalid messages."""
 
     def __init__(
-        self, error: dnslib.dns.DNSError, raw_data: bytes, remote_address: Tuple[str, int]
+        self, error: Exception, raw_data: bytes, remote_address: Tuple[str, int]
     ):
         encoded_data = base64.b64encode(raw_data).decode("ascii")
         message = f"{error} Remote: {remote_address} Bytes: {encoded_data}"
@@ -165,13 +165,17 @@ class TCPv4Transport(TransportBase):
     def receive_message(self) -> MessageContainer:
         connection, remote_address = self.socket.accept()
 
-        data_length = struct.unpack("!H", connection.recv(2))[0]
-        data_remaining = data_length
         data = b""
+        try:
+            data_length = struct.unpack("!H", connection.recv(2))[0]
+            data_remaining = data_length
 
-        while data_remaining > 0:
-            data += connection.recv(data_remaining)
-            data_remaining = data_length - len(data)
+            while data_remaining > 0:
+                data += connection.recv(data_remaining)
+                data_remaining = data_length - len(data)
+        except struct.error as e:
+            # failed to receive enough data to process message.
+            raise InvalidMessageError(struct.error, data, remote_address)
 
         message = MessageContainer(data, connection, self.SOCKET_TYPE, remote_address)
         return message
@@ -181,7 +185,13 @@ class TCPv4Transport(TransportBase):
             raise RuntimeError(f"Invalid socket_type: {message.socket_type} != {self.SOCKET_TYPE}")
         data = message.get_response_bytes()
         encoded_length = struct.pack("!H", len(data))
-        message.socket.sendall(encoded_length + data)
+        try:
+            message.socket.sendall(encoded_length + data)
+        except BrokenPipeError:
+            # Remote closed connection
+            # Dump Response per https://datatracker.ietf.org/doc/html/rfc7766#section-6.2.4
+            # TODO: Do I need to close the socket on my end? For now assume yes and simply pass.
+            pass
         message.socket.close()
         return
 

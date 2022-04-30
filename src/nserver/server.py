@@ -262,7 +262,13 @@ class NameServer:
             return response
 
         try:
-            query = Query.from_dns_question(message.questions[0])
+            try:
+                query = Query.from_dns_question(message.questions[0])
+            except ValueError as e:
+                self._warning(e)
+                response.header.set_rcode(dnslib.RCODE.FORMERR)
+                return response
+
             self._info(f"Question: {query.type} {query.name}")
 
             # Process before_request hooks
