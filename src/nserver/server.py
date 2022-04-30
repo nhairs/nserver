@@ -249,7 +249,7 @@ class NameServer:
         if message.header.opcode != dnslib.OPCODE.QUERY:
             self._info(f"Received non-query opcode: {message.header.opcode}")
             # This server only response to DNS queries
-            response.header.set_rcode(dnslib.RCODE.REFUSED)
+            response.header.set_rcode(dnslib.RCODE.NOTIMP)
             return response
 
         if len(message.questions) != 1:
@@ -258,7 +258,7 @@ class NameServer:
             # This is apparently common amongst DNS server implementations.
             # For more information see the responses to this SO question:
             # https://stackoverflow.com/q/4082081
-            response.header.set_rcode(dnslib.RCODE.FORMERR)
+            response.header.set_rcode(dnslib.RCODE.REFUSED)
             return response
 
         try:
