@@ -2,10 +2,12 @@
 ### ============================================================================
 ## Standard Library
 import base64
+from collections import deque
+import selectors
 import socket
 import struct
 import time
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any
 
 ## Installed
 import dnslib
@@ -52,9 +54,7 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
 class InvalidMessageError(ValueError):
     """Class for holding invalid messages."""
 
-    def __init__(
-        self, error: Exception, raw_data: bytes, remote_address: Tuple[str, int]
-    ):
+    def __init__(self, error: Exception, raw_data: bytes, remote_address: Tuple[str, int]):
         encoded_data = base64.b64encode(raw_data).decode("ascii")
         message = f"{error} Remote: {remote_address} Bytes: {encoded_data}"
         super().__init__(message)
@@ -138,12 +138,38 @@ class TCPv4Transport(TransportBase):
     """
 
     SOCKET_TYPE = "TCPv4"
+    SELECT_TIMEOUT = 0.1
+    CONNECTION_KEEPALIVE_LIMIT = 10  # seconds
+    CONNECTION_CACHE_LIMIT = 100
+    CONNECTION_CACHE_VACUUM_PERCENT = 0.9
+    CONNECTION_CACHE_TARGET = int(CONNECTION_CACHE_LIMIT * CONNECTION_CACHE_VACUUM_PERCENT)
+    CONNECTION_CACHE_CLEAN_INTERVAL = 15  # seconds
 
     def __init__(self, address: str, port: int):
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setblocking(False)
+
+        self.selector = selectors.DefaultSelector()
+        self.cached_connections: Dict[int, Dict[str, Any]] = {}
+        self.last_cache_clean = 0
+        self.connection_queue = deque()
+
+        self.socket_selector_key = self.selector.register(self.socket, selectors.EVENT_READ)
+
+        # wrap selector.register to debug
+        self._old_register = self.selector.register
+        self.selector.register = self._new_register
+        print(f"selector: {self.selector}")
+
         return
+
+    def _new_register(self, *args, **kwargs):
+        print(f"calling register: args={args} kwargs={kwargs}")
+        result = self._old_register(*args, **kwargs)
+        print(f"registered: {result}")
+        return result
 
     def start_server(self, timeout=60) -> None:
         start_time = time.time()
@@ -160,10 +186,11 @@ class TCPv4Transport(TransportBase):
         else:
             raise RuntimeError(f"Failed to bind server after {timeout} seconds")
         self.socket.listen()
+        self.last_cache_clean = time.time()  # avoid immediately trying to cleaning the cache
         return
 
     def receive_message(self) -> MessageContainer:
-        connection, remote_address = self.socket.accept()
+        connection, remote_address = self._get_next_connection()
 
         data = b""
         try:
@@ -201,3 +228,101 @@ class TCPv4Transport(TransportBase):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
+
+    def _get_next_connection(self) -> Tuple[socket.socket, Tuple[str, int]]:
+        while not self.connection_queue:
+            # loop until connection is ready for execution
+            events = self.selector.select(self.SELECT_TIMEOUT)
+            if events:
+                print(f"Got new events: {events}")
+                for key, event in events:
+                    self.connection_queue.append(key)
+                    if key.fileobj is not self.socket:
+                        # remote_socket, update last_data_time
+                        self.cached_connections[key.fd]["last_data_time"] = time.time()
+                break
+            # No connections ready, take advantage to do cleanup
+            if time.time() - self.last_cache_clean > self.CONNECTION_CACHE_CLEAN_INTERVAL:
+                self._cleanup_cached_connections()
+
+        # We have a connection
+        print(f"connection_queue: {self.connection_queue}")
+        selector_key = self.connection_queue.popleft()
+        connection = selector_key.fileobj
+
+        print(f"Checking socket: {connection}")
+
+        if connection is self.socket:
+            # new connection
+            remote_socket, remote_address = self.socket.accept()
+            if remote_socket.fileno() not in self.cached_connections:
+                remote_socket.setblocking(False)
+                print(f"New connection: {remote_socket}")
+                cache = {
+                    "socket": remote_socket,
+                    "remote_address": remote_address,
+                    "last_data_time": time.time(),
+                    "selector_key": self.selector.register(remote_socket, selectors.EVENT_READ),
+                }
+                self.cached_connections[remote_socket.fileno()] = cache
+            else:
+                self.cached_connections[remote_socket.fileno()]["last_data_time"] = time.time()
+            return remote_socket, remote_address
+
+        ## Remote socket is ready
+        # update last_data_time in case has been in queue for a while
+        self.cached_connections[connection.fileno()]["last_data_time"] = time.time()
+        return connection, connection.getpeername()
+
+    def _cleanup_cached_connections(self):
+        # check for expired connections
+        now = time.time()
+        cache_clear: List[Dict[str, Any]] = []
+        for cache in self.cached_connections.values():
+            if now - cache["last_data_time"] > self.CONNECTION_KEEPALIVE_LIMIT:
+                if cache["selector_key"] not in self.connection_queue:
+                    # No data ready, and no data for a while.
+                    # Mark for deletion (do not try to modify iterating object)
+                    cache_clear.append(cache)
+
+        for cache in cache_clear:
+            self._cache_remove(cache)
+
+        quiet_connections: List[Dict[str, Any]] = []
+        cached_connections_len = len(self.cached_connections)
+        if cached_connections_len > self.CONNECTION_CACHE_LIMIT:
+            print(f"Cache full ({cached_connections_len}/{self.CONNECTION_KEEPALIVE_LIMIT})")
+            # Check for connections which do not have data ready
+            for cache in self.cached_connections.values():
+                if cache["selector_key"] not in self.connection_queue:
+                    quiet_connections.append(cache)
+
+            if cached_connections_len - len(quiet_connections) > self.CONNECTION_CACHE_LIMIT:
+                # remove all connections
+                remove_connections = quiet_connections
+            else:
+                # attempt to reduce cache to self.CONNECTION_CACHE_TARGET
+                remove_count = cached_connections_len - self.CONNECTION_CACHE_TARGET
+                # sort to remove oldest first
+                quiet_connections.sort(key=lambda c: c["last_data_time"])
+                remove_connections = quiet_connections[:remove_count]
+
+            for cache in remove_connections:
+                self._cache_remove(cache)
+
+        self.last_cache_clean = time.time()
+        print(f"TCP Connection Cache {len(self.cached_connections)}/{self.CONNECTION_CACHE_LIMIT}")
+        return
+
+    def _cache_remove(self, cache: Dict[str, Any]) -> None:
+        print(f"Clearing {cache}")
+        connection = cache["socket"]
+        if connection.fileno == -1:
+            # Connection has closed
+            pass
+
+        del self.cached_connections[cache["selector_key"].fd]
+        self.selector.unregister(connection)
+        connection.close()
+        print(f"Expired TCP: {cache['remote_address']}")
+        return
