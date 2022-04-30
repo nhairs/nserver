@@ -158,18 +158,7 @@ class TCPv4Transport(TransportBase):
 
         self.socket_selector_key = self.selector.register(self.socket, selectors.EVENT_READ)
 
-        # wrap selector.register to debug
-        self._old_register = self.selector.register
-        self.selector.register = self._new_register
-        print(f"selector: {self.selector}")
-
         return
-
-    def _new_register(self, *args, **kwargs):
-        print(f"calling register: args={args} kwargs={kwargs}")
-        result = self._old_register(*args, **kwargs)
-        print(f"registered: {result}")
-        return result
 
     def start_server(self, timeout=60) -> None:
         start_time = time.time()
@@ -234,7 +223,7 @@ class TCPv4Transport(TransportBase):
             # loop until connection is ready for execution
             events = self.selector.select(self.SELECT_TIMEOUT)
             if events:
-                print(f"Got new events: {events}")
+                # print(f"Got new events: {events}")
                 for key, event in events:
                     self.connection_queue.append(key)
                     if key.fileobj is not self.socket:
@@ -246,18 +235,18 @@ class TCPv4Transport(TransportBase):
                 self._cleanup_cached_connections()
 
         # We have a connection
-        print(f"connection_queue: {self.connection_queue}")
+        # print(f"connection_queue: {self.connection_queue}")
         selector_key = self.connection_queue.popleft()
         connection = selector_key.fileobj
 
-        print(f"Checking socket: {connection}")
+        # print(f"Checking socket: {connection}")
 
         if connection is self.socket:
             # new connection
             remote_socket, remote_address = self.socket.accept()
             if remote_socket.fileno() not in self.cached_connections:
                 remote_socket.setblocking(False)
-                print(f"New connection: {remote_socket}")
+                # print(f"New connection: {remote_socket}")
                 cache = {
                     "socket": remote_socket,
                     "remote_address": remote_address,
@@ -291,7 +280,7 @@ class TCPv4Transport(TransportBase):
         quiet_connections: List[Dict[str, Any]] = []
         cached_connections_len = len(self.cached_connections)
         if cached_connections_len > self.CONNECTION_CACHE_LIMIT:
-            print(f"Cache full ({cached_connections_len}/{self.CONNECTION_KEEPALIVE_LIMIT})")
+            # print(f"Cache full ({cached_connections_len}/{self.CONNECTION_KEEPALIVE_LIMIT})")
             # Check for connections which do not have data ready
             for cache in self.cached_connections.values():
                 if cache["selector_key"] not in self.connection_queue:
@@ -311,11 +300,11 @@ class TCPv4Transport(TransportBase):
                 self._cache_remove(cache)
 
         self.last_cache_clean = time.time()
-        print(f"TCP Connection Cache {len(self.cached_connections)}/{self.CONNECTION_CACHE_LIMIT}")
+        # print(f"TCP Connection Cache {len(self.cached_connections)}/{self.CONNECTION_CACHE_LIMIT}")
         return
 
     def _cache_remove(self, cache: Dict[str, Any]) -> None:
-        print(f"Clearing {cache}")
+        # print(f"Clearing {cache}")
         connection = cache["socket"]
         if connection.fileno == -1:
             # Connection has closed
@@ -324,5 +313,5 @@ class TCPv4Transport(TransportBase):
         del self.cached_connections[cache["selector_key"].fd]
         self.selector.unregister(connection)
         connection.close()
-        print(f"Expired TCP: {cache['remote_address']}")
+        # print(f"Expired TCP: {cache['remote_address']}")
         return
