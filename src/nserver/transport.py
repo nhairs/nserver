@@ -377,12 +377,15 @@ class TCPv4Transport(TransportBase):
     def _close_connection(self, connection: socket.socket) -> None:
         """Close a socket and make sure it is closed."""
         # pylint: disable=no-self-use
-        try:
-            if connection.fileno() >= 0:
-                # Only shutdown active sockets
+        if connection.fileno() >= 0:
+            # Only call shutdown active sockets
+            try:
                 connection.shutdown(socket.SHUT_RDWR)
-            connection.close()
-        except Exception as e:
-            # print(f"failed to close {connection}")
-            raise e
+            except OSError as e:
+                if e.errno == 107:  # Transport endpoint is not connected
+                    # nothingtodohere.png
+                    pass
+                else:
+                    raise e
+        connection.close()
         return
