@@ -7,7 +7,7 @@ import selectors
 import socket
 import struct
 import time
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, List, Deque, Any, cast
 
 ## Installed
 import dnslib
@@ -33,9 +33,9 @@ def get_tcp_info(connection: socket.socket):
 
     ref: https://stackoverflow.com/a/18189190
     """
-    fmt = "B"*7+"I"*21
-    x = struct.unpack(fmt, connection.getsockopt(socket.IPPROTO_TCP, socket.TCP_INFO, 92))
-    return x
+    fmt = "B" * 7 + "I" * 21
+    tcp_info = struct.unpack(fmt, connection.getsockopt(socket.IPPROTO_TCP, socket.TCP_INFO, 92))
+    return tcp_info
 
 
 ### CLASSES
@@ -161,6 +161,8 @@ class TCPv4Transport(TransportBase):
         - https://tools.ietf.org/html/rfc7766#section-8
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     SOCKET_TYPE = "TCPv4"
     SELECT_TIMEOUT = 0.1
     CONNECTION_KEEPALIVE_LIMIT = 30  # seconds
@@ -169,7 +171,7 @@ class TCPv4Transport(TransportBase):
     CONNECTION_CACHE_TARGET = int(CONNECTION_CACHE_LIMIT * CONNECTION_CACHE_VACUUM_PERCENT)
     CONNECTION_CACHE_CLEAN_INTERVAL = 10  # seconds
 
-    def __init__(self, address: str, port: int):
+    def __init__(self, address: str, port: int) -> None:
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -179,8 +181,8 @@ class TCPv4Transport(TransportBase):
 
         self.selector = selectors.DefaultSelector()
         self.cached_connections: Dict[int, Dict[str, Any]] = {}
-        self.last_cache_clean = 0
-        self.connection_queue = deque()
+        self.last_cache_clean = 0.0
+        self.connection_queue: Deque[selectors.SelectorKey] = deque()
 
         self.socket_selector_key = self.selector.register(self.socket, selectors.EVENT_READ)
         return
@@ -250,7 +252,7 @@ class TCPv4Transport(TransportBase):
             # Remote closed connection
             # Drop response per https://datatracker.ietf.org/doc/html/rfc7766#section-6.2.4
             self._close_connection(message.socket)
-            pass
+
         # Note that we don't close the socket here in order to allow TCP request streaming
         return
 
@@ -272,7 +274,7 @@ class TCPv4Transport(TransportBase):
             events = self.selector.select(self.SELECT_TIMEOUT)
             if events:
                 # print(f"Got new events: {events}")
-                for key, event in events:
+                for key, _ in events:
                     if key.fileobj is self.socket:
                         # new connection on listening socket
                         self._accept_connection()
@@ -288,7 +290,8 @@ class TCPv4Transport(TransportBase):
         # We have a connection
         # print(f"connection_queue: {self.connection_queue}")
         selector_key = self.connection_queue.popleft()
-        connection = selector_key.fileobj
+        # cast as we know that we are only adding sockets to the selector.
+        connection = cast(socket.socket, selector_key.fileobj)
 
         # print(f"Checking socket: {connection}")
 
@@ -299,8 +302,8 @@ class TCPv4Transport(TransportBase):
             if e.errno == 107:  # Transport endpoint is not connected
                 self._close_connection(connection)
                 return self._get_next_connection()
-            else:
-                raise e
+            raise e
+
         return connection, remote_address
 
     def _accept_connection(self) -> None:
@@ -318,8 +321,7 @@ class TCPv4Transport(TransportBase):
             self.cached_connections[remote_socket.fileno()] = cache
         return
 
-
-    def _cleanup_cached_connections(self):
+    def _cleanup_cached_connections(self) -> None:
         # check for expired connections
         now = time.time()
         cache_clear: List[Dict[str, Any]] = []
@@ -374,6 +376,7 @@ class TCPv4Transport(TransportBase):
 
     def _close_connection(self, connection: socket.socket) -> None:
         """Close a socket and make sure it is closed."""
+        # pylint: disable=no-self-use
         try:
             if connection.fileno() >= 0:
                 # Only shutdown active sockets

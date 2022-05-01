@@ -231,7 +231,7 @@ def get_readme() -> Optional[Tuple[str, str]]:
             if not os.path.isfile(path):
                 continue
         # Success we have a path
-        with open(path) as readme_file:
+        with open(path, "rt", encoding="utf8") as readme_file:
             readme_content = readme_file.read()
         return (readme_content, content_type)
 

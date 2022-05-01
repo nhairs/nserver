@@ -1,10 +1,12 @@
+# pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use
+
 ### IMPORTS
 ### ============================================================================
 ## Standard Library
 import re
 
 ## Installed
-import pytest
+import pytest  # type: ignore # pylint: disable=import-error
 
 ## Application
 from nserver.rules import RegexRule, WildcardStringRule
@@ -14,6 +16,7 @@ from nserver.models import Query
 ### ============================================================================
 DUMMY_FUNCTION = lambda x: x  # The actual function does not matter
 
+
 def run_rule(rule, query, matches):
     result = rule.get_func(query)
     if matches:
@@ -21,13 +24,13 @@ def run_rule(rule, query, matches):
     else:
         assert result is None
 
+
 ### TESTS
 ### ============================================================================
 
 ## RegexRule
 ## -----------------------------------------------------------------------------
 class TestRegexRule:
-
     def test_qtypes(self):
         rule = RegexRule(re.compile(".*"), ["A", "AAAA"], DUMMY_FUNCTION)
 
@@ -119,11 +122,9 @@ class TestRegexRule:
         return
 
 
-
 ## WildcardStringRule
 ## -----------------------------------------------------------------------------
 class TestWildcardStringRule:
-
     def test_qtypes(self):
         rule = WildcardStringRule("**", ["A", "AAAA"], DUMMY_FUNCTION)
 
