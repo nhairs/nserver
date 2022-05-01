@@ -50,6 +50,7 @@ class NameServer:
         self.settings.MAX_ERRORS = 5
 
         self.shutdown_server = False
+        self.exit_code = 0
         return
 
     def register_rule(self, rule: RuleBase) -> None:
@@ -96,7 +97,7 @@ class NameServer:
         self.hooks["after_query"].append(func)
         return
 
-    def run(self) -> None:
+    def run(self) -> int:
         """Start running the server"""
         # Setup Logging
         console_logger = logging.StreamHandler()
@@ -123,9 +124,14 @@ class NameServer:
             raise ValueError(f"Unknown SERVER_TYPE: {server_type}")
 
         self._info(f"Starting {server}")
-        server.start_server()
-        error_count = 0
+        try:
+            server.start_server()
+        except Exception as e:  # pylint: disable=broad-except
+            self._critical(e)
+            self.exit_code = 1
+            return self.exit_code
 
+        error_count = 0
         # Process Requests
         while True:
             if self.shutdown_server:
@@ -143,6 +149,7 @@ class NameServer:
                 if error_count >= self.settings.MAX_ERRORS:
                     self._critical(f"Max errors hit ({error_count})")
                     self.shutdown_server = True
+                    self.exit_code = 1
             except KeyboardInterrupt:
                 self._info("KeyboardInterrupt received.")
                 self.shutdown_server = True
@@ -153,7 +160,7 @@ class NameServer:
 
         # Teardown Logging
         self._logger.removeHandler(console_logger)
-        return
+        return self.exit_code
 
     ## Decorators
     ## -------------------------------------------------------------------------
