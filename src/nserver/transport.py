@@ -14,6 +14,30 @@ import dnslib
 
 ## Application
 
+### FUNCTIONS
+### ============================================================================
+def get_tcp_info(connection: socket.socket):
+    """Get tcp_info
+
+    TCP_ESTABLISHED = 1,
+    TCP_SYN_SENT,
+    TCP_SYN_RECV,
+    TCP_FIN_WAIT1,
+    TCP_FIN_WAIT2,
+    TCP_TIME_WAIT,
+    TCP_CLOSE,
+    TCP_CLOSE_WAIT,
+    TCP_LAST_ACK,
+    TCP_LISTEN,
+    TCP_CLOSING
+
+    ref: https://stackoverflow.com/a/18189190
+    """
+    fmt = "B"*7+"I"*21
+    x = struct.unpack(fmt, connection.getsockopt(socket.IPPROTO_TCP, socket.TCP_INFO, 92))
+    return x
+
+
 ### CLASSES
 ### ============================================================================
 class MessageContainer:  # pylint: disable=too-few-public-methods
@@ -139,17 +163,19 @@ class TCPv4Transport(TransportBase):
 
     SOCKET_TYPE = "TCPv4"
     SELECT_TIMEOUT = 0.1
-    CONNECTION_KEEPALIVE_LIMIT = 10  # seconds
-    CONNECTION_CACHE_LIMIT = 100
+    CONNECTION_KEEPALIVE_LIMIT = 30  # seconds
+    CONNECTION_CACHE_LIMIT = 200
     CONNECTION_CACHE_VACUUM_PERCENT = 0.9
     CONNECTION_CACHE_TARGET = int(CONNECTION_CACHE_LIMIT * CONNECTION_CACHE_VACUUM_PERCENT)
-    CONNECTION_CACHE_CLEAN_INTERVAL = 15  # seconds
+    CONNECTION_CACHE_CLEAN_INTERVAL = 10  # seconds
 
     def __init__(self, address: str, port: int):
         self.address = address
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setblocking(False)
+        # Allow taking over of socket when in TIME_WAIT (i.e. previously released)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self.selector = selectors.DefaultSelector()
         self.cached_connections: Dict[int, Dict[str, Any]] = {}
@@ -157,7 +183,6 @@ class TCPv4Transport(TransportBase):
         self.connection_queue = deque()
 
         self.socket_selector_key = self.selector.register(self.socket, selectors.EVENT_READ)
-
         return
 
     def start_server(self, timeout=60) -> None:
@@ -179,19 +204,37 @@ class TCPv4Transport(TransportBase):
         return
 
     def receive_message(self) -> MessageContainer:
-        connection, remote_address = self._get_next_connection()
+
+        # Our selector (at least when epoll), appears to send EVENT_READ when
+        # the connection is in TCP 8 (CLOSE-WAIT), i.e. when the client has closed
+        # their side of the connection.
+        # This will result in connection.recv to return 0 bytes - i.e. python's
+        # way of indicating that the socket was closed.
+        # This means when getting the next connection, we may need to iterate
+        # through a number of closed connections and make sure we close them.
+        # There appears to be no way to know ahead of time if a tcp connection
+        # is going to be used for pipelined requests, so we can't optimistically
+        # close the connection after servign a response.
+        # Ref: https://datatracker.ietf.org/doc/html/rfc7766#section-6.2.1
+
+        while True:
+            connection, remote_address = self._get_next_connection()
+            packed_length = connection.recv(2)
+
+            if packed_length:
+                # We have data
+                break
+            # No data, we need to close this connection and keep looping.
+            self._close_connection(connection)
+            continue
+
+        data_length = struct.unpack("!H", packed_length)[0]
+        data_remaining = data_length
 
         data = b""
-        try:
-            data_length = struct.unpack("!H", connection.recv(2))[0]
-            data_remaining = data_length
-
-            while data_remaining > 0:
-                data += connection.recv(data_remaining)
-                data_remaining = data_length - len(data)
-        except struct.error as e:
-            # failed to receive enough data to process message.
-            raise InvalidMessageError(struct.error, data, remote_address)
+        while data_remaining > 0:
+            data += connection.recv(data_remaining)
+            data_remaining = data_length - len(data)
 
         message = MessageContainer(data, connection, self.SOCKET_TYPE, remote_address)
         return message
@@ -205,14 +248,19 @@ class TCPv4Transport(TransportBase):
             message.socket.sendall(encoded_length + data)
         except BrokenPipeError:
             # Remote closed connection
-            # Dump Response per https://datatracker.ietf.org/doc/html/rfc7766#section-6.2.4
-            # TODO: Do I need to close the socket on my end? For now assume yes and simply pass.
+            # Drop response per https://datatracker.ietf.org/doc/html/rfc7766#section-6.2.4
+            self._close_connection(message.socket)
             pass
-        message.socket.close()
+        # Note that we don't close the socket here in order to allow TCP request streaming
         return
 
     def stop_server(self) -> None:
-        self.socket.close()
+        # Stop listening
+        self._close_connection(self.socket)
+        # Cleanup existing connections
+        cached_connections = list(self.cached_connections.values())
+        for cache in cached_connections:
+            self._cache_remove(cache)
         return
 
     def __repr__(self):
@@ -225,11 +273,14 @@ class TCPv4Transport(TransportBase):
             if events:
                 # print(f"Got new events: {events}")
                 for key, event in events:
-                    self.connection_queue.append(key)
-                    if key.fileobj is not self.socket:
+                    if key.fileobj is self.socket:
+                        # new connection on listening socket
+                        self._accept_connection()
+                    else:
                         # remote_socket, update last_data_time
+                        self.connection_queue.append(key)
                         self.cached_connections[key.fd]["last_data_time"] = time.time()
-                break
+                        break
             # No connections ready, take advantage to do cleanup
             if time.time() - self.last_cache_clean > self.CONNECTION_CACHE_CLEAN_INTERVAL:
                 self._cleanup_cached_connections()
@@ -241,27 +292,32 @@ class TCPv4Transport(TransportBase):
 
         # print(f"Checking socket: {connection}")
 
-        if connection is self.socket:
-            # new connection
-            remote_socket, remote_address = self.socket.accept()
-            if remote_socket.fileno() not in self.cached_connections:
-                remote_socket.setblocking(False)
-                # print(f"New connection: {remote_socket}")
-                cache = {
-                    "socket": remote_socket,
-                    "remote_address": remote_address,
-                    "last_data_time": time.time(),
-                    "selector_key": self.selector.register(remote_socket, selectors.EVENT_READ),
-                }
-                self.cached_connections[remote_socket.fileno()] = cache
+        ## Remote socket
+        try:
+            remote_address = connection.getpeername()
+        except OSError as e:
+            if e.errno == 107:  # Transport endpoint is not connected
+                self._close_connection(connection)
+                return self._get_next_connection()
             else:
-                self.cached_connections[remote_socket.fileno()]["last_data_time"] = time.time()
-            return remote_socket, remote_address
+                raise e
+        return connection, remote_address
 
-        ## Remote socket is ready
-        # update last_data_time in case has been in queue for a while
-        self.cached_connections[connection.fileno()]["last_data_time"] = time.time()
-        return connection, connection.getpeername()
+    def _accept_connection(self) -> None:
+        """Accept a connection, cache it, and add it to the selector"""
+        remote_socket, remote_address = self.socket.accept()
+        if remote_socket.fileno() not in self.cached_connections:
+            remote_socket.setblocking(False)
+            # print(f"New connection: {remote_socket}")
+            cache = {
+                "socket": remote_socket,
+                "remote_address": remote_address,
+                "last_data_time": time.time(),
+                "selector_key": self.selector.register(remote_socket, selectors.EVENT_READ),
+            }
+            self.cached_connections[remote_socket.fileno()] = cache
+        return
+
 
     def _cleanup_cached_connections(self):
         # check for expired connections
@@ -280,7 +336,7 @@ class TCPv4Transport(TransportBase):
         quiet_connections: List[Dict[str, Any]] = []
         cached_connections_len = len(self.cached_connections)
         if cached_connections_len > self.CONNECTION_CACHE_LIMIT:
-            # print(f"Cache full ({cached_connections_len}/{self.CONNECTION_KEEPALIVE_LIMIT})")
+            # print(f"Cache full ({cached_connections_len}/{self.CONNECTION_CACHE_LIMIT})")
             # Check for connections which do not have data ready
             for cache in self.cached_connections.values():
                 if cache["selector_key"] not in self.connection_queue:
@@ -312,6 +368,18 @@ class TCPv4Transport(TransportBase):
 
         del self.cached_connections[cache["selector_key"].fd]
         self.selector.unregister(connection)
-        connection.close()
+        self._close_connection(connection)
         # print(f"Expired TCP: {cache['remote_address']}")
+        return
+
+    def _close_connection(self, connection: socket.socket) -> None:
+        """Close a socket and make sure it is closed."""
+        try:
+            if connection.fileno() >= 0:
+                # Only shutdown active sockets
+                connection.shutdown(socket.SHUT_RDWR)
+            connection.close()
+        except Exception as e:
+            # print(f"failed to close {connection}")
+            raise e
         return
