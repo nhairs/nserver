@@ -22,7 +22,7 @@ AUTOCLEAN_LIMIT=10
 # Notation Reference: https://unix.stackexchange.com/questions/122845/using-a-b-for-variable-assignment-in-scripts#comment685330_122848
 : ${CI:=0}  # Flag for if we are in CI - default to not.
 
-PYTHON_PACKAGE_REPOSITORY="testpypi"
+PYTHON_PACKAGE_REPOSITORY="pypi"
 TESTPYPI_USERNAME="nhairs-test"
 
 ### FUNCTIONS
