@@ -6,7 +6,7 @@ BUILD_TIMESTAMP=$(date +%s)
 BUILD_DATETIME="datetime.datetime.utcfromtimestamp(${BUILD_TIMESTAMP})"
 PACKAGE_VERSION=$(grep '^PACKAGE_VERSION' setup.py | cut -d '"' -f 2)
 
-if [[ "$GIT_BRANCH" == "master" ]]; then
+if [[ "$GIT_BRANCH" == "master" || "$GIT_BRANCH" == "main" ]]; then
     BUILD_VERSION="${PACKAGE_VERSION}.${BUILD_TIMESTAMP}"
 else
     BUILD_VERSION="${PACKAGE_VERSION}.${GIT_COMMIT_SHORT}"
@@ -60,6 +60,11 @@ if [ "$PYTHON_PACKAGE_REPOSITORY" == "testpypi" ]; then
     grep "^PACKAGE_NAME = " setup.py
 
     mv "src/${PACKAGE_PYTHON_NAME}" "src/${PACKAGE_PYTHON_NAME}_$(echo -n $TESTPYPI_USERNAME | tr '-' '_')"
+fi
+
+if [[ "$GIT_BRANCH" != "master" && "$GIT_BRANCH" != "main" ]]; then
+    sed -i "s/^PACKAGE_VERSION = .*/PACKAGE_VERSION = \"${BUILD_VERSION}\"/" setup.py
+    grep "^PACKAGE_VERSION = " setup.py
 fi
 
 ## Build
