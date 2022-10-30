@@ -376,7 +376,6 @@ class TCPv4Transport(TransportBase):
 
     def _close_connection(self, connection: socket.socket) -> None:
         """Close a socket and make sure it is closed."""
-        # pylint: disable=no-self-use
         if connection.fileno() >= 0:
             # Only call shutdown active sockets
             try:

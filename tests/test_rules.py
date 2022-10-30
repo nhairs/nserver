@@ -1,4 +1,4 @@
-# pylint: disable=missing-class-docstring,missing-function-docstring,no-self-use
+# pylint: disable=missing-class-docstring,missing-function-docstring
 
 ### IMPORTS
 ### ============================================================================
@@ -14,7 +14,8 @@ from nserver.models import Query
 
 ### UTILITY
 ### ============================================================================
-DUMMY_FUNCTION = lambda x: x  # The actual function does not matter
+# The actual function does not matter..
+DUMMY_FUNCTION = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
 
 
 def run_rule(rule, query, matches):

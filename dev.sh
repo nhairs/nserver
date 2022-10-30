@@ -11,11 +11,13 @@ set -e  # Bail at the first sign of trouble
 ### ============================================================================
 SOURCE_UID=$(id -u)
 SOURCE_GID=$(id -g)
+SOURCE_UID_GID="${SOURCE_UID}:${SOURCE_GID}"
 GIT_COMMIT_SHORT=$(git rev-parse --short HEAD)
 GIT_COMMIT=$(git rev-parse HEAD)
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 PACKAGE_NAME=$(grep 'PACKAGE_NAME =' setup.py | cut -d '=' -f 2 | tr -d ' ' | tr -d '"')
 PACKAGE_PYTHON_NAME=$(echo -n "$PACKAGE_NAME" | tr '-' '_')
+PACKAGE_VERSION=$(grep '^PACKAGE_VERSION' setup.py | cut -d '"' -f 2)
 
 AUTOCLEAN_LIMIT=10
 
@@ -25,60 +27,64 @@ AUTOCLEAN_LIMIT=10
 PYTHON_PACKAGE_REPOSITORY="pypi"
 TESTPYPI_USERNAME="nhairs-test"
 
+
+## Build related
+BUILD_TIMESTAMP=$(date +%s)
+
+if [[ "$GIT_BRANCH" == "master" || "$GIT_BRANCH" == "main" ]]; then
+    BUILD_VERSION="${PACKAGE_VERSION}"
+else
+    # Tox doesn't like version labes like
+    # python_template-0.0.0+3f2d02f.1667158525-py3-none-any.whl
+    #BUILD_VERSION="${PACKAGE_VERSION}+${GIT_COMMIT_SHORT}.${BUILD_TIMESTAMP}"
+
+    # Use PEP 440 non-compliant versions since we know it works
+    BUILD_VERSION="${PACKAGE_VERSION}.${GIT_COMMIT_SHORT}"
+fi
+
+## Insert into .tmp/env
+## -----------------------------------------------------------------------------
+if [ ! -d .tmp ]; then
+    mkdir .tmp
+fi
+
+echo "⚙️  writing .tmp/env"
+cat > .tmp/env <<EOF
+PACKAGE_NAME=${PACKAGE_NAME}
+PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}
+PACKAGE_VERSION=${PACKAGE_VERSION}
+GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}
+GIT_COMMIT=${GIT_COMMIT}
+GIT_BRANCH=${GIT_BRANCH}
+PYTHON_PACKAGE_REPOSITORY=${PYTHON_PACKAGE_REPOSITORY}
+TESTPYPI_USERNAME=${TESTPYPI_USERNAME}
+SOURCE_UID=${SOURCE_UID}
+SOURCE_GID=${SOURCE_GID}
+SOURCE_UID_GID=${SOURCE_UID_GID}
+BUILD_TIMESTAMP=${BUILD_TIMESTAMP}
+BUILD_VERSION=${BUILD_VERSION}
+EOF
+
+# workaround for old docker-compose versions
+cp .tmp/env .env
+
 ### FUNCTIONS
 ### ============================================================================
 ## Docker Functions
 ## -----------------------------------------------------------------------------
-function get_docker_tag {
-    echo -n "${PACKAGE_NAME}-${1}:${GIT_COMMIT}"
+function compose_build {
+    echo "🐋 Building $1"
+    docker-compose build $1 1>/dev/null
+    echo
 }
 
-function docker_build {
-    echo "🐋 Building $2"
-    docker build \
-        --quiet \
-        --file "lib/${1}" \
-        --build-arg "PACKAGE_NAME=${PACKAGE_NAME}" \
-        --build-arg "PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}" \
-        --build-arg "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}" \
-        --build-arg "GIT_COMMIT=${GIT_COMMIT}" \
-        --build-arg "GIT_BRANCH=${GIT_BRANCH}" \
-        --build-arg "PYTHON_PACKAGE_REPOSITORY=${PYTHON_PACKAGE_REPOSITORY}" \
-        --build-arg "TESTPYPI_USERNAME=${TESTPYPI_USERNAME}" \
-        --build-arg "SOURCE_UID=${SOURCE_UID}" \
-        --build-arg "SOURCE_GID=${SOURCE_GID}" \
-        --tag "$(get_docker_tag "$2")" \
-        .
-}
-
-function docker_run {
+function compose_run {
+    #echo "🤔 Debugging"
+    #echo "docker-compose -f docker-compose.yml run --rm $@"
     echo "🐋 running $1"
-    docker run --rm \
-        --name "$(get_docker_tag "$1" | tr ":" "-")" \
-        --volume "$(pwd):/srv" \
-        "$(get_docker_tag "$1")"
+    docker-compose -f docker-compose.yml run --rm $@
+    echo
 }
-
-function docker_run_build {
-    # Specialised function for build
-    # mounts only dist instead of .
-    echo "🐋 running $1"
-    docker run --rm \
-        --name "$(get_docker_tag "$1" | tr ":" "-")" \
-        --volume "$(pwd)/dist:/srv/dist" \
-        "$(get_docker_tag "$1")"
-}
-
-function docker_run_interactive {
-    echo "🐋 running $1"
-    docker run --rm \
-        --interactive \
-        --tty \
-        --name "$(get_docker_tag "$1" | tr ":" "-")" \
-        --volume "$(pwd):/srv" \
-        "$(get_docker_tag "$1")"
-}
-
 
 function docker_clean {
     echo "🐋 Removing ${PACKAGE_NAME} images"
@@ -87,6 +93,7 @@ function docker_clean {
         docker images | grep "$PACKAGE_NAME" | awk '{OFS=":"} {print $1, $2}' | xargs docker rmi
     fi
 }
+
 
 function docker_clean_unused {
     docker images | \
@@ -128,6 +135,32 @@ function check_file {
     fi
 }
 
+## Command Functions
+## -----------------------------------------------------------------------------
+function command_build {
+    if [ -z $1 ] | [ "$1" = "dist" ]; then
+        BUILD_DIR="dist"
+    elif [ "$1" = "tmp" ]; then
+        BUILD_DIR=".tmp/dist"
+    else
+        return 1
+    fi
+
+    # TODO: unstashed changed guard
+
+    if [ ! -d $BUILD_DIR ]; then
+        heading "setup 📜"
+        mkdir $BUILD_DIR
+    fi
+
+    echo "BUILD_DIR=${BUILD_DIR}" >> .env
+    echo "BUILD_DIR=${BUILD_DIR}" >> .tmp/env
+
+    heading "build 🐍"
+    compose_build python-build
+    compose_run python-build
+}
+
 ### MAIN
 ### ============================================================================
 case $1 in
@@ -138,47 +171,55 @@ case $1 in
             exit 250
         fi
         heading "black 🐍"
-        docker_build "python/format/black.Dockerfile" format-black
-        docker_run format-black
+        compose_build python-common
+        compose_run python-common \
+            black --line-length 100 --target-version py37 setup.py src tests
 
         ;;
 
     "lint")
+        compose_build python-common
+
+        #echo "🤔 Debugging"
+        #compose_run python-common ls -lah
+        #compose_run python-common pip list
+
         heading "black - check only 🐍"
-        docker_build "python/lint/black.Dockerfile" lint-black
-        docker_run lint-black
+        compose_run python-common \
+            black --line-length 100 --target-version py37 --check --diff setup.py src tests
 
         heading "pylint 🐍"
-        docker_build "python/lint/pylint.Dockerfile" lint-pylint
-        docker_run lint-pylint
+        compose_run python-common pylint --output-format=colorized setup.py src tests
 
         heading "mypy 🐍"
-        docker_build "python/lint/mypy.Dockerfile" lint-mypy
-        docker_run lint-mypy
+        compose_run python-common mypy src tests
 
         ;;
 
     "test")
-        heading "pytest 🐍"
-        docker_build "python/test/pytest.Dockerfile" test-pytest
-        docker_run test-pytest
+        command_build tmp
 
         heading "tox 🐍"
-        docker_build "python/test/tox.Dockerfile" test-tox
-        docker_run test-tox
+        compose_build python-tox
+        compose_run python-tox tox -e py37
+
+        rm -rf .tmp/dist/*
+
+        ;;
+
+    "test-full")
+        command_build tmp
+
+        heading "tox 🐍"
+        compose_build python-tox
+        compose_run python-tox tox
+
+        rm -rf .tmp/dist/*
 
         ;;
 
     "build")
-        # TODO: unstashed changed guard
-        if [ ! -d dist ]; then
-            heading "setup 📜"
-            mkdir dist
-        fi
-
-        heading "build 🐍"
-        docker_build "python/build/build.Dockerfile" build
-        docker_run_build build
+        command_build dist
         ;;
 
     "upload")
@@ -202,8 +243,11 @@ case $1 in
 
     "repl")
         heading "repl 🐍"
-        docker_build "python/repl/repl.Dockerfile" repl-python
-        docker_run_interactive repl-python
+        echo "import ${PACKAGE_PYTHON_NAME}" > .tmp/repl.py
+        echo "print('Your package is already imported 🎉\nPress ctrl+d to exit')" >> .tmp/repl.py
+
+        compose_build python-common
+        compose_run python-common python3 -i .tmp/repl.py
         ;;
 
     "clean")
@@ -217,19 +261,14 @@ case $1 in
         echo "🐍 remove build artifacts"
         rm -rf build dist "src/${PACKAGE_PYTHON_NAME}.egg-info"
 
+        echo "cleaning .tmp"
+        rm -rf .tmp/*
+
         ;;
 
     "debug")
         heading "Debug 📜"
-        echo "PACKAGE_NAME=${PACKAGE_NAME}"
-        echo "PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}"
-        echo "GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}"
-        echo "GIT_COMMIT=${GIT_COMMIT}"
-        echo "GIT_BRANCH=${GIT_BRANCH}"
-        echo "PYTHON_PACKAGE_REPOSITORY=${PYTHON_PACKAGE_REPOSITORY}"
-        echo "TESTPYPI_USERNAME=${TESTPYPI_USERNAME}"
-        echo "SOURCE_UID=${SOURCE_UID}"
-        echo "SOURCE_GID=${SOURCE_GID}"
+        cat .tmp/env
         echo
         echo "Checking Directory Layout..."
         check_file "src/${PACKAGE_PYTHON_NAME}/__init__.py"
