@@ -1,6 +1,7 @@
 # NServer: a high-level Python DNS Name Server Framework.
 
 [![PyPi](https://img.shields.io/pypi/v/nserver.svg)](https://pypi.python.org/pypi/nserver/)
+[![PyPI - Status](https://img.shields.io/pypi/status/nserver)](https://pypi.python.org/pypi/nserver/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/nserver.svg)](https://github.com/nhairs/nserver)
 [![License](https://img.shields.io/github/license/nhairs/nserver.svg)](https://github.com/nhairs/nserver)
 
