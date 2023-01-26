@@ -5,7 +5,7 @@
 ## Standard Library
 from ipaddress import IPv4Address, IPv6Address
 import re
-from typing import Any, Union, Dict
+from typing import Any, Union, Dict, Optional
 
 ## Installed
 import dnslib
@@ -26,7 +26,7 @@ class RecordBase:
     Subclasses must set _record_kwargs
     """
 
-    def __init__(self, resource_name: str, ttl: int = None) -> None:
+    def __init__(self, resource_name: str, ttl: Optional[int] = None) -> None:
         if self.__class__ is RecordBase:
             raise RuntimeError("Do not instantiate directly - only subclass")
 
@@ -52,7 +52,7 @@ class RecordBase:
 class A(RecordBase):  # pylint: disable=invalid-name
     """A (IPv4) Record."""
 
-    def __init__(self, name: str, ip: Union[str, IPv4Address], ttl: int = None):
+    def __init__(self, name: str, ip: Union[str, IPv4Address], ttl: Optional[int] = None):
         super().__init__(name, ttl)
 
         if isinstance(ip, str):
@@ -67,7 +67,7 @@ class A(RecordBase):  # pylint: disable=invalid-name
 class AAAA(RecordBase):
     """AAAA (IPv6) Record."""
 
-    def __init__(self, name: str, ip: Union[str, IPv6Address], ttl: int = None):
+    def __init__(self, name: str, ip: Union[str, IPv6Address], ttl: Optional[int] = None):
         super().__init__(name, ttl)
 
         if isinstance(ip, str):
@@ -80,7 +80,7 @@ class AAAA(RecordBase):
 class MX(RecordBase):
     """MX Record."""
 
-    def __init__(self, name: str, domain: str, priority: int = 10, ttl: int = None):
+    def __init__(self, name: str, domain: str, priority: int = 10, ttl: Optional[int] = None):
         super().__init__(name, ttl)
 
         self._record_kwargs = {"label": domain, "preference": priority}
@@ -90,7 +90,7 @@ class MX(RecordBase):
 class TXT(RecordBase):
     """TXT Record."""
 
-    def __init__(self, name: str, text: str, ttl: int = None):
+    def __init__(self, name: str, text: str, ttl: Optional[int] = None):
         super().__init__(name, ttl)
 
         # NOTE: consider converting to bytes to allow for unicode or other.
@@ -119,7 +119,7 @@ class CNAME(RecordBase):
     # domains that do not end in a "real" TLD.
     regex = re.compile(r"(?:[a-z0-9\-\_]+\.)+(?:[a-z0-9\-\_]+)\.?")
 
-    def __init__(self, name: str, domain: str, ttl: int = None):
+    def __init__(self, name: str, domain: str, ttl: Optional[int] = None):
         super().__init__(name, ttl)
 
         # TODO support converting unicode domains
@@ -161,7 +161,7 @@ class SOA(RecordBase):
         retry_period: int,
         expires: int,
         minimum_ttl: int,
-        ttl: int = None,
+        ttl: Optional[int] = None,
     ):
         super().__init__(name, ttl)
 
@@ -183,7 +183,13 @@ class SRV(RecordBase):
     """SRV Record."""
 
     def __init__(  # pylint: disable=too-many-arguments
-        self, name: str, priority: int, weight: int, port: int, target: str, ttl: int = None
+        self,
+        name: str,
+        priority: int,
+        weight: int,
+        port: int,
+        target: str,
+        ttl: Optional[int] = None,
     ):
         super().__init__(name, ttl)
 
@@ -207,7 +213,7 @@ class CAA(RecordBase):
     VALID_TAGS = {"issue", "issuewild", "iodef"}
 
     def __init__(
-        self, name: str, flags: int, tag: str, value: str, ttl: int = None
+        self, name: str, flags: int, tag: str, value: str, ttl: Optional[int] = None
     ):  # pylint: disable=too-many-arguments
         """Create a new CAA Record
 

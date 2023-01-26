@@ -62,7 +62,7 @@ PACKAGE_PYTHON_NAME = PACKAGE_NAME.replace("-", "_")
 #
 # See also:
 #   - https://www.python.org/dev/peps/pep-0440/
-PACKAGE_VERSION = "0.3.1"
+PACKAGE_VERSION = "0.3.2"
 
 PACKAGE_DESCRIPTION = "DNS Name Server Framework"
 
