@@ -203,6 +203,15 @@ function check_file {
     fi
 }
 
+function check_pyproject_toml {
+    # Pretty print if the given key exists in pyproject.toml.
+    if toml get --toml-path pyproject.toml $1 1>/dev/null 2>/dev/null; then
+        echo -e "$1 \e[1;32m EXISTS\e[0m"
+    else
+        echo -e "$1 \e[1;31m MISSING\e[0m"
+    fi
+}
+
 ## Command Functions
 ## -----------------------------------------------------------------------------
 function command_build {
@@ -415,6 +424,10 @@ EOF
         check_file "src/${PACKAGE_PYTHON_NAME}/py.typed"
         check_file "src/${PACKAGE_PYTHON_NAME}/__init__.py"
         check_file "src/${PACKAGE_PYTHON_NAME}/_version.py"
+        echo
+        echo "Checking pyproject.toml"
+        check_pyproject_toml project.optional-dependencies.dev
+        check_pyproject_toml tool.setuptools.package-data.${PACKAGE_PYTHON_NAME}
 
         echo
 
