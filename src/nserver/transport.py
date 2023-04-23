@@ -16,6 +16,7 @@ import dnslib
 
 ## Application
 
+
 ### CONSTANTS
 ### ============================================================================
 class TcpState(IntEnum):
@@ -72,7 +73,7 @@ def recv_data(
         data_remaining = data_length - len(data)
         if data_remaining and time.time() - start_time > timeout:
             msg = f"timeout reading data from {connection.getpeername()}"
-            raise Exception(msg)
+            raise TimeoutError(msg)
     return data
 
 

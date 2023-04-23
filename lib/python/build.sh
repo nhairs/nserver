@@ -64,4 +64,5 @@ fi
 
 ## Build
 ## -----------------------------------------------------------------------------
-python3 setup.py bdist_wheel
+#python3 setup.py bdist_wheel
+python3 -m build --wheel

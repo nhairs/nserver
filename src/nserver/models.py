@@ -9,6 +9,7 @@ import dnslib
 ## Application
 from .records import RecordBase
 
+
 ### CLASSES
 ### ============================================================================
 class Query:  # pylint: disable=too-few-public-methods

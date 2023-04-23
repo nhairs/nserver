@@ -7,40 +7,70 @@
 ### ============================================================================
 set -e  # Bail at the first sign of trouble
 
+# Notation Reference: https://unix.stackexchange.com/questions/122845/using-a-b-for-variable-assignment-in-scripts#comment685330_122848
+: ${DEBUG:=0}
+: ${CI:=0}  # Flag for if we are in CI - default to not.
+: ${SKIP_BUILD:=0}  # Allow some commands to forcibly skip compose-build
+: ${PORT:=8000}  # allows for some commands to change the port
+
+if ! command -v toml &> /dev/null; then
+    pip install --user toml-cli
+fi
+
 ### CONTANTS
 ### ============================================================================
 SOURCE_UID=$(id -u)
 SOURCE_GID=$(id -g)
 SOURCE_UID_GID="${SOURCE_UID}:${SOURCE_GID}"
-GIT_COMMIT_SHORT=$(git rev-parse --short HEAD)
-GIT_COMMIT=$(git rev-parse HEAD)
-GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-PACKAGE_NAME=$(grep 'PACKAGE_NAME =' setup.py | cut -d '=' -f 2 | tr -d ' ' | tr -d '"')
-PACKAGE_PYTHON_NAME=$(echo -n "$PACKAGE_NAME" | tr '-' '_')
-PACKAGE_VERSION=$(grep '^PACKAGE_VERSION' setup.py | cut -d '"' -f 2)
+GIT_REPOSITORY=$(git remote get-url origin 2>/dev/null | cut -d '/' -f 2 | cut -d '.' -f 1 | grep . || echo -n 'none')
+GIT_COMMIT_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo -n 'none')
+GIT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo -n 'none')
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo -n 'none')
+PACKAGE_PYTHON_NAME=$(toml get --toml-path pyproject.toml project.name)
+PACKAGE_NAME=$(echo -n "$PACKAGE_PYTHON_NAME" | tr '_' '-')
+PACKAGE_VERSION=$(toml get --toml-path pyproject.toml project.version)
 
-AUTOCLEAN_LIMIT=10
+: ${AUTOCLEAN_LIMIT:=10}
 
-# Notation Reference: https://unix.stackexchange.com/questions/122845/using-a-b-for-variable-assignment-in-scripts#comment685330_122848
-: ${CI:=0}  # Flag for if we are in CI - default to not.
+: ${PYTHON_PACKAGE_REPOSITORY:="pypi"}
+: ${TESTPYPI_USERNAME="$USER-test"}
 
-PYTHON_PACKAGE_REPOSITORY="pypi"
-TESTPYPI_USERNAME="nhairs-test"
-
+## Python Project Related
+## -----------------------------------------------------------------------------
+# You may want to customise these for your project
+SOURCE_FILES="src tests"
+MIN_PYTHON_VERSION="py37"
 
 ## Build related
+## -----------------------------------------------------------------------------
 BUILD_TIMESTAMP=$(date +%s)
 
 if [[ "$GIT_BRANCH" == "master" || "$GIT_BRANCH" == "main" ]]; then
     BUILD_VERSION="${PACKAGE_VERSION}"
 else
-    # Tox doesn't like version labes like
+    # Tox doesn't like version labels like
     # python_template-0.0.0+3f2d02f.1667158525-py3-none-any.whl
     #BUILD_VERSION="${PACKAGE_VERSION}+${GIT_COMMIT_SHORT}.${BUILD_TIMESTAMP}"
 
     # Use PEP 440 non-compliant versions since we know it works
     BUILD_VERSION="${PACKAGE_VERSION}.${GIT_COMMIT_SHORT}"
 fi
+
+BUILT_WHEEL="${PACKAGE_PYTHON_NAME}-${BUILD_VERSION}-py3-none-any.whl"
+
+## Load manifests
+## -----------------------------------------------------------------------------
+if [ -f "lib/manifest.env" ]; then
+    echo "⚙️  loading lib/manifest.env"
+    source lib/manifest.env
+fi
+
+if [ -f "locals.env" ]; then
+    echo "⚙️  loading locals.env"
+    source locals.env
+fi
+
+## Generate remaining vars
 
 ## Insert into .tmp/env
 ## -----------------------------------------------------------------------------
@@ -53,6 +83,7 @@ cat > .tmp/env <<EOF
 PACKAGE_NAME=${PACKAGE_NAME}
 PACKAGE_PYTHON_NAME=${PACKAGE_PYTHON_NAME}
 PACKAGE_VERSION=${PACKAGE_VERSION}
+GIT_REPOSITORY=${GIT_REPOSITORY}
 GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT}
 GIT_COMMIT=${GIT_COMMIT}
 GIT_BRANCH=${GIT_BRANCH}
@@ -63,6 +94,8 @@ SOURCE_GID=${SOURCE_GID}
 SOURCE_UID_GID=${SOURCE_UID_GID}
 BUILD_TIMESTAMP=${BUILD_TIMESTAMP}
 BUILD_VERSION=${BUILD_VERSION}
+BUILD_DIR=.tmp/dist  # default
+BUILT_WHEEL=${BUILT_WHEEL}
 EOF
 
 # workaround for old docker-compose versions
@@ -73,41 +106,69 @@ cp .tmp/env .env
 ## Docker Functions
 ## -----------------------------------------------------------------------------
 function compose_build {
-    echo "🐋 Building $1"
-    docker-compose build $1 1>/dev/null
+    heading2 "🐋 Building $1"
+    if [ "$CI" = 1 ]; then
+        docker compose build --progress plain $1
+
+    elif [ "$DEBUG" = 1 ]; then
+        docker compose build --progress plain $1
+
+    else
+        docker compose build $1
+    fi
     echo
 }
 
 function compose_run {
-    #echo "🤔 Debugging"
-    #echo "docker-compose -f docker-compose.yml run --rm $@"
-    echo "🐋 running $1"
-    docker-compose -f docker-compose.yml run --rm $@
+    heading2 "🐋 running $@"
+    docker compose -f docker-compose.yml run --rm "$@"
     echo
 }
 
 function docker_clean {
-    echo "🐋 Removing ${PACKAGE_NAME} images"
-    COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | wc -l)
+    heading2 "🐋 Removing $PACKAGE_NAME images"
+    IMAGES=$(docker images --filter "reference=${PACKAGE_NAME}-asdf*" | tail -n +2)
+    COUNT_IMAGES=$(echo -n "$IMAGES" | wc -l)
+    if [ "$DEBUG" = 1 ]; then
+        echo "IMAGES=$IMAGES"
+        echo "COUNT_IMAGES=$COUNT_IMAGES"
+    fi
+
     if [[ $COUNT_IMAGES -gt 0 ]]; then
-        docker images | grep "$PACKAGE_NAME" | awk '{OFS=":"} {print $1, $2}' | xargs docker rmi
+        docker images | grep "$PACKAGE_NAME" | awk '{OFS=":"} {print $1, $2}' | xargs -t docker rmi
     fi
 }
 
 
 function docker_clean_unused {
-    docker images | \
-        grep "$PACKAGE_NAME" | \
+    docker images --filter "reference=${PACKAGE_NAME}-*" -a | \
+        tail -n +2 | \
         grep -v "$GIT_COMMIT" | \
         awk '{OFS=":"} {print $1, $2}' | \
-        xargs docker rmi
+        xargs -t docker rmi
 }
 
 function docker_autoclean {
     if [[ $CI = 0 ]]; then
-        COUNT_IMAGES=$(docker images | grep "$PACKAGE_NAME" | grep -v "$GIT_COMMIT" | wc -l)
+        if [ "$DEBUG" = 1 ]; then
+            heading2 "🐋 determining if need to clean"
+        fi
+
+        IMAGES=$(
+            docker images --filter "reference=${PACKAGE_NAME}-*" -a |\
+            tail -n +2 |\
+            grep -v "$GIT_COMMIT" ;\
+            /bin/true
+        )
+        COUNT_IMAGES=$(echo -n "$IMAGES" | wc -l)
+
+        if [ "$DEBUG" = 1 ]; then
+            echo "IMAGES=${IMAGES}"
+            echo "COUNT_IMAGES=${COUNT_IMAGES}"
+        fi
+
         if [[ $COUNT_IMAGES -gt $AUTOCLEAN_LIMIT ]]; then
-            heading "Removing unused ${PACKAGE_NAME} images 🐋"
+            heading2 "Removing unused ${PACKAGE_NAME} images 🐋"
             docker_clean_unused
         fi
     fi
@@ -119,9 +180,16 @@ function heading {
     # Print a pretty heading
     # https://en.wikipedia.org/wiki/Box-drawing_character#Unicode
     echo "╓─────────────────────────────────────────────────────────────────────"
-    echo "║ $1"
+    echo "║ $@"
     echo "╙───────────────────"
     echo
+}
+
+function heading2 {
+    # Print a pretty heading-2
+    # https://en.wikipedia.org/wiki/Box-drawing_character#Unicode
+    echo "╓ $@"
+    echo "╙───────────────────"
 }
 
 ## Debug Functions
@@ -157,8 +225,33 @@ function command_build {
     echo "BUILD_DIR=${BUILD_DIR}" >> .tmp/env
 
     heading "build 🐍"
-    compose_build python-build
+    if [ "$SKIP_BUILD" = 0 ]; then
+        compose_build python-build
+    fi
     compose_run python-build
+}
+
+
+function display_usage {
+    echo "dev.sh - development utility"
+    echo "Usage: ./dev.sh COMMAND"
+    echo
+    echo "           build    Build python packages"
+    echo "           clean    Cleanup clutter"
+    echo "           debug    Display debug / basic health check information"
+    echo "            docs    Preview docs locally"
+    echo "          format    Format files"
+    echo "            help    Show this text"
+    echo "            lint    Lint files. You probably want to format first."
+    echo "            repl    Open Python interactive shell with the package imported"
+    echo "                    If repl.py exists will use this file instead of default template."
+    echo "             run    Run the given file in the python-common container"
+    echo "             tag    Tag commit with current version"
+    echo "            test    Run unit tests"
+    echo "       test-full    Run unit tests on all python versions"
+    echo "          upload    Upload built files to where they are distributed from (e.g. PyPI)"
+    echo
+    echo
 }
 
 ### MAIN
@@ -171,28 +264,35 @@ case $1 in
             exit 250
         fi
         heading "black 🐍"
-        compose_build python-common
+        if [ "$SKIP_BUILD" = 0 ]; then
+            compose_build python-common
+        fi
+
         compose_run python-common \
-            black --line-length 100 --target-version py37 setup.py src tests
+            black --line-length 100 --target-version ${MIN_PYTHON_VERSION} $SOURCE_FILES
 
         ;;
 
     "lint")
-        compose_build python-common
+        if [ "$SKIP_BUILD" = 0 ]; then
+            compose_build python-common
+        fi
 
-        #echo "🤔 Debugging"
-        #compose_run python-common ls -lah
-        #compose_run python-common pip list
+        if [ "$DEBUG" = 1 ]; then
+            heading2 "🤔 Debugging"
+            compose_run python-common ls -lah
+            compose_run python-common pip list
+        fi
 
         heading "black - check only 🐍"
         compose_run python-common \
-            black --line-length 100 --target-version py37 --check --diff setup.py src tests
+            black --line-length 100 --target-version ${MIN_PYTHON_VERSION} --check --diff $SOURCE_FILES
 
         heading "pylint 🐍"
-        compose_run python-common pylint --output-format=colorized setup.py src tests
+        compose_run python-common pylint -j 4 --output-format=colorized $SOURCE_FILES
 
         heading "mypy 🐍"
-        compose_run python-common mypy src tests
+        compose_run python-common mypy $SOURCE_FILES
 
         ;;
 
@@ -200,8 +300,10 @@ case $1 in
         command_build tmp
 
         heading "tox 🐍"
-        compose_build python-tox
-        compose_run python-tox tox -e py37
+        if [ "$SKIP_BUILD" = 0 ]; then
+            compose_build python-tox
+        fi
+        compose_run python-tox tox -e ${MIN_PYTHON_VERSION}
 
         rm -rf .tmp/dist/*
 
@@ -211,7 +313,9 @@ case $1 in
         command_build tmp
 
         heading "tox 🐍"
-        compose_build python-tox
+        if [ "$SKIP_BUILD" = 0 ]; then
+            compose_build python-tox
+        fi
         compose_run python-tox tox
 
         rm -rf .tmp/dist/*
@@ -220,6 +324,7 @@ case $1 in
 
     "build")
         command_build dist
+
         ;;
 
     "upload")
@@ -235,19 +340,51 @@ case $1 in
         fi
 
         heading "upload 📜"
-        twine upload --repository "${PYTHON_PACKAGE_REPOSITORY}" dist/*
+        twine upload --repository "${PYTHON_PACKAGE_REPOSITORY}" dist/*.whl
 
         echo "📜 cleanup"
         mv dist/* dist_uploaded
+
         ;;
 
     "repl")
-        heading "repl 🐍"
-        echo "import ${PACKAGE_PYTHON_NAME}" > .tmp/repl.py
-        echo "print('Your package is already imported 🎉\nPress ctrl+d to exit')" >> .tmp/repl.py
+        heading "REPL 🐍"
+        if [[ -f "repl.py" ]]; then
+            echo "Using provided repl.py"
+            echo
+            cp repl.py .tmp/repl.py
+        else
+            echo "Using default repl.py"
+            echo
+            cat > .tmp/repl.py <<EOF
+import ${PACKAGE_PYTHON_NAME}
+print('Your package is already imported 🎉\nPress ctrl+d to exit')
+EOF
+        fi
 
-        compose_build python-common
-        compose_run python-common python3 -i .tmp/repl.py
+        if [ "$SKIP_BUILD" = 0 ]; then
+            compose_build python-common
+        fi
+        compose_run python-common bpython --config bpython.ini -i .tmp/repl.py
+
+        ;;
+
+    "run")
+        heading "Running 🐍"
+        if [ "$SKIP_BUILD" = 0 ]; then
+            compose_build python-common
+        fi
+        compose_run python-common "${@:2}"
+
+        ;;
+
+    "docs")
+        heading "Preview Docs 🐍"
+        if [ "$SKIP_BUILD" = 0 ]; then
+            compose_build python-common
+        fi
+        compose_run -p 127.0.0.1:${PORT}:8080 python-common mkdocs serve -a 0.0.0.0:8080 -w docs
+
         ;;
 
     "clean")
@@ -255,6 +392,9 @@ case $1 in
         docker_clean
 
         echo "🐍 pyclean"
+        if ! command -v pyclean &> /dev/null; then
+            pip3 install --user pyclean
+        fi
         pyclean src
         pyclean tests
 
@@ -271,34 +411,32 @@ case $1 in
         cat .tmp/env
         echo
         echo "Checking Directory Layout..."
+        check_file "pyproject.toml"
+        check_file "src/${PACKAGE_PYTHON_NAME}/py.typed"
         check_file "src/${PACKAGE_PYTHON_NAME}/__init__.py"
         check_file "src/${PACKAGE_PYTHON_NAME}/_version.py"
 
         echo
+
+        ;;
+
+    "tag")
+        heading "Tagging Git Commit 🛠️"
+        TAG="v${PACKAGE_VERSION}"
+        git tag "$TAG"
+
         ;;
 
     "help")
-        echo "dev.sh - development utility"
-        echo "Usage: ./dev.sh COMMAND"
-        echo
-        echo "Commands:"
-        echo "    build     Build python packages"
-        echo "    clean     Cleanup clutter"
-        echo "    debug     Display debug / basic health check information"
-        echo "    format    Format files"
-        echo "    help      Show this text"
-        echo "    lint      Lint files. You probably want to format first."
-        echo "    upload    Upload files to pypi server"
-        echo "    repl      Open Python interactive shell with package imported"
-        echo "    test      Run unit tests"
-        echo
-        echo ""
+        display_usage
 
         ;;
 
     *)
         echo -e "\e[1;31mUnknown command \"${1}\"\e[0m"
+        display_usage
         exit 255
+
         ;;
 esac
 

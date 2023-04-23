@@ -10,22 +10,28 @@ FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
 
-RUN apt update && apt upgrade --yes \
- && apt install --yes software-properties-common wget \
- && add-apt-repository ppa:deadsnakes/ppa \
- && apt update
+RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean \
+    && apt update \
+    && apt upgrade --yes \
+    && apt install --yes software-properties-common wget python3-pip\
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt update --yes
 
-RUN apt install --yes python3-pip
-RUN apt install --yes \
-    python3.6 python3.6-dev python3.6-distutils \
-    python3.7 python3.7-dev python3.7-distutils \
-    python3.9 python3.9-dev python3.9-distutils \
-    python3.10 python3.10-dev python3.10-distutils \
-    python3.11 python3.11-dev python3.11-distutils
+RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
+    --mount=target=/var/cache/apt,type=cache,sharing=locked \
+    apt install --yes \
+        python3.6 python3.6-dev python3.6-distutils \
+        python3.7 python3.7-dev python3.7-distutils \
+        python3.9 python3.9-dev python3.9-distutils \
+        python3.10 python3.10-dev python3.10-distutils \
+        python3.11 python3.11-dev python3.11-distutils
 
 ## pypy
 ADD lib/python/install_pypy.sh /tmp
-RUN /tmp/install_pypy.sh
+RUN --mount=target=/tmp/pypy,type=cache,sharing=locked \
+    /tmp/install_pypy.sh
 
 
 ARG SOURCE_UID

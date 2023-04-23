@@ -14,6 +14,7 @@ from .models import Query, Response
 from .transport import UDPv4Transport, TCPv4Transport, TransportBase, InvalidMessageError
 from .records import RecordBase
 
+
 ### NAME SERVER
 ### ============================================================================
 class NameServer:

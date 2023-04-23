@@ -36,6 +36,7 @@ VERSION_INFO_TEMPLATE_FULL = (
     "Built: {BUILD_DATETIME}"
 )
 
+
 ### FUNCTIONS
 ### ============================================================================
 def get_version_info_short() -> str:  # pylint: disable=missing-function-docstring

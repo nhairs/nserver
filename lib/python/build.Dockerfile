@@ -19,6 +19,6 @@ RUN chown -R ${SOURCE_UID_GID} /code # needed twice because added files
 
 RUN ls -lah /code
 
-RUN su - devuser -c "cd /code && pip install --user setuptools wheel"
+RUN su - devuser -c "cd /code && pip install --user build"
 
 CMD echo "docker-compose build python-build complete 🎉"
