@@ -5,7 +5,7 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/nserver.svg)](https://github.com/nhairs/nserver)
 [![License](https://img.shields.io/github/license/nhairs/nserver.svg)](https://github.com/nhairs/nserver)
 
-NServer is a Python (3.6+) framework for building customised DNS name servers with a focuses on ease of use over completeness. It implements high level APIs for interacting with DNS queries whilst making very few assumptions about how responses are generated.
+NServer is a Python framework for building customised DNS name servers with a focuses on ease of use over completeness. It implements high level APIs for interacting with DNS queries whilst making very few assumptions about how responses are generated.
 
 It is not intended to act like traditional DNS servers such as [BIND](https://www.isc.org/bind/) or [CoreDNS](https://github.com/coredns/coredns) and should not be considered a general DNS resolver.
 
