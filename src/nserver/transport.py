@@ -85,7 +85,7 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
     Used to simplify the interface (and allow for threading etc later).
     """
 
-    SOCKET_TYPES = {"UDPv4", "TCPv4"}
+    SOCKET_TYPES = {"UDPv4", "TCPv4", "UDPv6"}
 
     def __init__(
         self,
@@ -150,11 +150,12 @@ class UDPv4Transport(TransportBase):
     """Transport class for IPv4 UDP."""
 
     SOCKET_TYPE = "UDPv4"
+    SOCKET_AF = socket.AF_INET
 
     def __init__(self, address: str, port: int):
         self.address = address
         self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket = socket.socket(self.SOCKET_AF, socket.SOCK_DGRAM)
         return
 
     def start_server(self, timeout=60) -> None:
@@ -191,6 +192,11 @@ class UDPv4Transport(TransportBase):
 
     def __repr__(self):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
+
+
+class UDPv6Transport(UDPv4Transport):
+    SOCKET_TYPE = "UDPv6"
+    SOCKET_AF = socket.AF_INET6
 
 
 # TCPv4 Server

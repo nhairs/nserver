@@ -11,7 +11,7 @@ import dnslib
 ## Application
 from .rules import RuleBase, WildcardStringRule, RegexRule
 from .models import Query, Response
-from .transport import UDPv4Transport, TCPv4Transport, TransportBase, InvalidMessageError
+from .transport import UDPv4Transport, UDPv6Transport, TCPv4Transport, TransportBase, InvalidMessageError
 from .records import RecordBase
 
 
@@ -121,6 +121,8 @@ class NameServer:
             server = TCPv4Transport(self.settings.SERVER_ADDRESS, self.settings.SERVER_PORT)
         elif server_type == "UDPv4":
             server = UDPv4Transport(self.settings.SERVER_ADDRESS, self.settings.SERVER_PORT)
+        elif server_type == "UDPv6":
+            server = UDPv6Transport(self.settings.SERVER_ADDRESS, self.settings.SERVER_PORT)
         else:
             raise ValueError(f"Unknown SERVER_TYPE: {server_type}")
 
