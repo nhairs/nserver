@@ -1,25 +1,28 @@
 ### IMPORTS
 ### ============================================================================
 ## Standard Library
-import base64
 from collections import deque
 from dataclasses import dataclass
-from enum import IntEnum
+import enum
 import selectors
 import socket
 import struct
 import time
-from typing import Tuple, Optional, Dict, List, Deque, NewType, cast
+
+# Note: Union can only be replaced with `X | Y` in 3.10+
+from typing import Tuple, Optional, Dict, List, Deque, NewType, Any, Union, cast
 
 ## Installed
 import dnslib
 
 ## Application
+from .exceptions import InvalidMessageError
+from .settings import Settings
 
 
 ### CONSTANTS
 ### ============================================================================
-class TcpState(IntEnum):
+class TcpState(enum.IntEnum):
     """State of a TCP connection.
 
     General usage:
@@ -64,7 +67,7 @@ def get_tcp_state(connection: socket.socket) -> TcpState:
 def recv_data(
     data_length: int, connection: socket.socket, existing_data: bytes = b"", timeout: int = 10
 ) -> bytes:
-    """Receive data a given amount of data from a socket."""
+    """Receive a given amount of data from a socket."""
     data = bytes(existing_data)
     data_remaining = data_length - len(data)
     start_time = time.time()
@@ -72,62 +75,73 @@ def recv_data(
         data += connection.recv(data_remaining)
         data_remaining = data_length - len(data)
         if data_remaining and time.time() - start_time > timeout:
-            msg = f"timeout reading data from {connection.getpeername()}"
-            raise TimeoutError(msg)
+            raise TimeoutError(f"timeout reading data from {connection.getpeername()}")
     return data
 
 
 ### CLASSES
 ### ============================================================================
 class MessageContainer:  # pylint: disable=too-few-public-methods
-    """Class for holding DNS messages and the socket they originated from.
+    """Class for holding DNS messages and the transport they originated from.
 
     Used to simplify the interface (and allow for threading etc later).
     """
 
-    SOCKET_TYPES = {"UDPv4", "TCPv4"}
-
     def __init__(
         self,
         raw_data: bytes,
-        socket_: Optional[socket.socket],
-        socket_type: str,
-        remote_address: Tuple[str, int],
+        transport: "TransportBase",
+        transport_data: Any,
+        remote_client: Union[str, Tuple[str, int]],
     ):
-        if socket_type not in self.SOCKET_TYPES:
-            raise ValueError(f"Unkown socket_type {socket_type!r}")
+        """Create new message container
 
+        `raw_data` is the raw message pulled from the transport. It will parsed
+        as a DNS message.
+        `transport` is the transport instance that created this message (e.g. `self`).
+        Messages must only be returned to this transport instance when responding (even
+        if it would be possible for another instance to respond (e.g. with UDP processing)).
+        As such transports should rely on only receiving messages that they created
+        (opposed to `assert message.transport is self`).
+        `transport_data` is data that the transport instance wishes to store with
+        this message for later use. What is stored is up to the transport, and it is
+        up to the transport implementation to correctly handle it.
+        `remote_client` is a representation of the remote client that sent this DNS
+        request. This value is primarily to allow logging and debugging of invalid
+        requests. Whilst transport instances must set this value, they should not
+        use it for processing.
+        """
+        # Note: We used to have checks on the validity of the input arguments.
+        # However as this function is internal to this package and this package
+        # is now mature enough to have unit tests, linters, and type checkers,
+        # then we /should/ always have the correct values.
         try:
             self.message = dnslib.DNSRecord.parse(raw_data)
         except dnslib.dns.DNSError as e:
-            raise InvalidMessageError(e, raw_data, remote_address) from e
-        self.socket = socket_
-        self.socket_type = socket_type
-        self.remote_address = remote_address
+            raise InvalidMessageError(e, raw_data, remote_client) from e
+
+        self.transport = transport
+        self.transport_data = transport_data
+        self.remote_client = remote_client
         self.response: Optional[dnslib.DNSRecord] = None
         return
 
     def get_response_bytes(self):
         """Convert response object to bytes"""
         if self.response is None:
-            raise RuntimeError("response not set!")
+            raise AttributeError("response not set!")
         return self.response.pack()
-
-
-class InvalidMessageError(ValueError):
-    """Class for holding invalid messages."""
-
-    def __init__(self, error: Exception, raw_data: bytes, remote_address: Tuple[str, int]):
-        encoded_data = base64.b64encode(raw_data).decode("ascii")
-        message = f"{error} Remote: {remote_address} Bytes: {encoded_data}"
-        super().__init__(message)
-        return
 
 
 ## Transport Classes
 ## -----------------------------------------------------------------------------
 class TransportBase:
     """Base class for all transports"""
+
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+        # TODO: setup logging
+        return
 
     def start_server(self, timeout=60) -> None:
         """Start transport's server"""
@@ -146,15 +160,25 @@ class TransportBase:
         raise NotImplementedError()
 
 
+# UDP Transports
+# ..............................................................................
+@dataclass
+class UDPMessageData:
+    """Message.transport_data for UDP transports"""
+
+    remote_address: Tuple[str, int]
+
+
 class UDPv4Transport(TransportBase):
     """Transport class for IPv4 UDP."""
 
-    SOCKET_TYPE = "UDPv4"
+    _SOCKET_AF = socket.AF_INET
 
-    def __init__(self, address: str, port: int):
-        self.address = address
-        self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    def __init__(self, settings: Settings):
+        super().__init__(settings)
+        self.address = self.settings.server_address
+        self.port = self.settings.server_port
+        self.socket = socket.socket(self._SOCKET_AF, socket.SOCK_DGRAM)
         return
 
     def start_server(self, timeout=60) -> None:
@@ -175,14 +199,12 @@ class UDPv4Transport(TransportBase):
 
     def receive_message(self) -> MessageContainer:
         data, remote_address = self.socket.recvfrom(512)
-        message = MessageContainer(data, None, self.SOCKET_TYPE, remote_address)
+        message = MessageContainer(data, self, UDPMessageData(remote_address), remote_address)
         return message
 
     def send_message_response(self, message: MessageContainer) -> None:
-        if message.socket_type != self.SOCKET_TYPE:
-            raise RuntimeError(f"Invalid socket_type: {message.socket_type} != {self.SOCKET_TYPE}")
         data = message.get_response_bytes()
-        self.socket.sendto(data, message.remote_address)
+        self.socket.sendto(data, message.transport_data.remote_address)
         return
 
     def stop_server(self) -> None:
@@ -193,8 +215,21 @@ class UDPv4Transport(TransportBase):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
 
 
-# TCPv4 Server
+class UDPv6Transport(UDPv4Transport):
+    """Transport class for IPv6 UDP."""
+
+    _SOCKET_AF = socket.AF_INET6
+
+
+# TCP Transport
 # ..............................................................................
+@dataclass
+class TCPMessageData:
+    """Message.transport_data for TCP transports"""
+
+    socket: socket.socket
+
+
 @dataclass
 class CachedConnection:
     "Dataclass for storing information about a TCP connection"
@@ -214,7 +249,6 @@ class TCPv4Transport(TransportBase):
 
     # pylint: disable=too-many-instance-attributes
 
-    SOCKET_TYPE = "TCPv4"
     SELECT_TIMEOUT = 0.1
     CONNECTION_KEEPALIVE_LIMIT = 30  # seconds
     CONNECTION_CACHE_LIMIT = 200
@@ -222,9 +256,10 @@ class TCPv4Transport(TransportBase):
     CONNECTION_CACHE_TARGET = int(CONNECTION_CACHE_LIMIT * CONNECTION_CACHE_VACUUM_PERCENT)
     CONNECTION_CACHE_CLEAN_INTERVAL = 10  # seconds
 
-    def __init__(self, address: str, port: int) -> None:
-        self.address = address
-        self.port = port
+    def __init__(self, settings: Settings) -> None:
+        super().__init__(settings)
+        self.address = self.settings.server_address
+        self.port = self.settings.server_port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setblocking(False)
         # Allow taking over of socket when in TIME_WAIT (i.e. previously released)
@@ -263,19 +298,17 @@ class TCPv4Transport(TransportBase):
         data_length = struct.unpack("!H", packed_length)[0]
         data = recv_data(data_length, connection)
 
-        return MessageContainer(data, connection, self.SOCKET_TYPE, remote_address)
+        return MessageContainer(data, self, TCPMessageData(connection), remote_address)
 
     def send_message_response(self, message: MessageContainer) -> None:
-        if message.socket_type != self.SOCKET_TYPE or message.socket is None:
-            raise RuntimeError(f"Invalid socket_type: {message.socket_type} != {self.SOCKET_TYPE}")
         data = message.get_response_bytes()
         encoded_length = struct.pack("!H", len(data))
         try:
-            message.socket.sendall(encoded_length + data)
+            message.transport_data.socket.sendall(encoded_length + data)
         except BrokenPipeError:
             # Remote closed connection
             # Drop response per https://datatracker.ietf.org/doc/html/rfc7766#section-6.2.4
-            self._remove_connection(message.socket)
+            self._remove_connection(message.transport_data.socket)
 
         # Note that we don't close the socket here in order to allow TCP request streaming
         # print(f"Sent response to {self._get_cache_key(message.socket)} {message.remote_address}")

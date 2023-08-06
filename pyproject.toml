@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nserver"
-version = "0.3.3"
+version = "0.4.0"
 description = "DNS Name Server Framework"
 authors  = [
     {name = "Nicholas Hairs", email = "info+nserver@nicholashairs.com"},

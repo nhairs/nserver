@@ -1,28 +1,40 @@
 ### IMPORTS
 ### ============================================================================
 ## Standard Library
-from argparse import Namespace
 import logging
-from typing import List, Callable, Dict, Pattern
+
+# Note: Optional can only be replaced with `| None` in 3.10+
+from typing import List, Callable, Dict, Pattern, Optional, Type
 
 ## Installed
 import dnslib
 
 ## Application
-from .rules import RuleBase, WildcardStringRule, RegexRule
+from .exceptions import InvalidMessageError
 from .models import Query, Response
-from .transport import UDPv4Transport, TCPv4Transport, TransportBase, InvalidMessageError
 from .records import RecordBase
+from .rules import RuleBase, WildcardStringRule, RegexRule
+from .settings import Settings
+from .transport import TransportBase, UDPv4Transport, UDPv6Transport, TCPv4Transport
 
 
-### NAME SERVER
+### CONSTANTS
+### ============================================================================
+TRANSPORT_MAP: Dict[str, Type[TransportBase]] = {
+    "UDPv4": UDPv4Transport,
+    "UDPv6": UDPv6Transport,
+    "TCPv4": TCPv4Transport,
+}
+
+
+### Classes
 ### ============================================================================
 class NameServer:
     """NameServer for responding to requests."""
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, settings: Optional[Settings] = None) -> None:
         """Initialise NameServer
 
         args:
@@ -38,17 +50,14 @@ class NameServer:
         self._logger = logging.getLogger(f"nserver.i.{self.name}")
         self._before_first_query_run = False
 
-        self.settings = Namespace()
-        self.settings.SERVER_TYPE = "UDPv4"
-        self.settings.SERVER_ADDRESS = "localhost"
-        self.settings.SERVER_PORT = 9953
-        self.settings.DEBUG = False
-        self.settings.HEALTH_CHECK = False
-        self.settings.STATS = False
-        self.settings.REMOTE_ADMIN = False
-        self.settings.CONSOLE_LOG_LEVEL = logging.INFO
-        self.settings.FILE_LOG_LEVEL = logging.INFO
-        self.settings.MAX_ERRORS = 5
+        self.settings = settings if settings is not None else Settings()
+
+        transport = TRANSPORT_MAP.get(self.settings.server_transport)
+        if transport is None:
+            raise ValueError(
+                f"Invalid settings.server_transport {self.settings.server_transport!r}"
+            )
+        self.transport = transport(self.settings)
 
         self.shutdown_server = False
         self.exit_code = 0
@@ -102,7 +111,7 @@ class NameServer:
         """Start running the server"""
         # Setup Logging
         console_logger = logging.StreamHandler()
-        console_logger.setLevel(self.settings.CONSOLE_LOG_LEVEL)
+        console_logger.setLevel(self.settings.console_log_level)
 
         console_formatter = logging.Formatter(
             "[{asctime}][{levelname}][{name}] {message}", style="{"
@@ -111,43 +120,37 @@ class NameServer:
         console_logger.setFormatter(console_formatter)
 
         self._logger.addHandler(console_logger)
-        self._logger.setLevel(min(self.settings.CONSOLE_LOG_LEVEL, self.settings.FILE_LOG_LEVEL))
+        self._logger.setLevel(min(self.settings.console_log_level, self.settings.file_log_level))
 
         # Start Server
-        server_type = self.settings.SERVER_TYPE
-        server: TransportBase
+        # TODO: Do we want to recreate the transport instance or do we assume that
+        # transport.shutdown_server puts it back into a ready state?
+        # We could make this configurable? :thonking:
 
-        if server_type == "TCPv4":
-            server = TCPv4Transport(self.settings.SERVER_ADDRESS, self.settings.SERVER_PORT)
-        elif server_type == "UDPv4":
-            server = UDPv4Transport(self.settings.SERVER_ADDRESS, self.settings.SERVER_PORT)
-        else:
-            raise ValueError(f"Unknown SERVER_TYPE: {server_type}")
-
-        self._info(f"Starting {server}")
+        self._info(f"Starting {self.transport}")
         try:
-            server.start_server()
+            self.transport.start_server()
         except Exception as e:  # pylint: disable=broad-except
             self._critical(e)
             self.exit_code = 1
             return self.exit_code
 
-        error_count = 0
         # Process Requests
+        error_count = 0
         while True:
             if self.shutdown_server:
                 break
             try:
-                message = server.receive_message()
+                message = self.transport.receive_message()
                 response = self._process_dns_record(message.message)
                 message.response = response
-                server.send_message_response(message)
+                self.transport.send_message_response(message)
             except InvalidMessageError as e:
                 self._warning(f"{e}")
             except Exception as e:  # pylint: disable=broad-except
                 self._error(f"Uncaught error occured. {e}", exc_info=True)
                 error_count += 1
-                if error_count >= self.settings.MAX_ERRORS:
+                if error_count >= self.settings.max_errors:
                     self._critical(f"Max errors hit ({error_count})")
                     self.shutdown_server = True
                     self.exit_code = 1
@@ -157,7 +160,7 @@ class NameServer:
 
         # Stop Server
         self._info("Shutting down server")
-        server.stop_server()
+        self.transport.stop_server()
 
         # Teardown Logging
         self._logger.removeHandler(console_logger)
