@@ -10,12 +10,12 @@ from typing import Callable, List, Optional, Pattern, Union
 import tldextract
 
 ## Application
-from .models import Query
+from .models import Query, Response
 from .records import RecordBase
 
 ### CLASSES
 ### ============================================================================
-ResponseFunction = Callable[[Query], Union[None, RecordBase, List[RecordBase]]]
+ResponseFunction = Callable[[Query], Union[None, RecordBase, List[RecordBase], Response]]
 """
 Type Alias for functions that will be called when a rule is matched
 """
