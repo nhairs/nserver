@@ -23,11 +23,10 @@ from .settings import Settings
 ### CONSTANTS
 ### ============================================================================
 class TcpState(enum.IntEnum):
-    """State of a TCP connection.
+    """State of a TCP connection"""
 
-    General usage:
-    `TcpState(get_tcp_info(connection)[0])`
-    """
+    # ref: /usr/include/netinet/tcp.h
+    # alt: https://github.com/torvalds/linux/blob/master/include/net/tcp_states.h
 
     TCP_ESTABLISHED = 1
     TCP_SYN_SENT = 2
@@ -49,25 +48,47 @@ CacheKey = NewType("CacheKey", str)
 
 ### FUNCTIONS
 ### ============================================================================
-def get_tcp_info(connection: socket.socket):
-    """Get tcp_info
+def get_tcp_info(connection: socket.socket) -> Tuple:
+    """Get `socket.TCP_INFO` from socket
 
-    ref: https://stackoverflow.com/a/18189190
+    Args:
+        connection: the socket to inspect
+
+    Returns:
+        Tuple of 28 integers.
+
+            Strictly speaking the data returned is platform dependent as will be whatever is in
+            `/usr/include/linux/tcp.h`. For our purposes we cap it at the first 28 values.
     """
+    # Ref: https://stackoverflow.com/a/18189190
     fmt = "B" * 7 + "I" * 21
     tcp_info = struct.unpack(fmt, connection.getsockopt(socket.IPPROTO_TCP, socket.TCP_INFO, 92))
     return tcp_info
 
 
 def get_tcp_state(connection: socket.socket) -> TcpState:
-    "Get the TcpState of a socket"
+    """Get the `TcpState` of a socket
+
+    Args:
+        connection: the socket to inspect
+    """
     return TcpState(get_tcp_info(connection)[0])
 
 
 def recv_data(
     data_length: int, connection: socket.socket, existing_data: bytes = b"", timeout: int = 10
 ) -> bytes:
-    """Receive a given amount of data from a socket."""
+    """Receive a given amount of data from a socket.
+
+    Args:
+        data_length: number of bytes to receive
+        connection: the socket to receive data from
+        existing_data: data that is added to the response before we collect further data
+        timeout: time before giving up in seconds
+
+    Raises:
+        TimeoutError: timeout was reached before we finished receiving the data
+    """
     data = bytes(existing_data)
     data_remaining = data_length - len(data)
     start_time = time.time()
@@ -96,20 +117,24 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
     ):
         """Create new message container
 
-        `raw_data` is the raw message pulled from the transport. It will parsed
-        as a DNS message.
-        `transport` is the transport instance that created this message (e.g. `self`).
-        Messages must only be returned to this transport instance when responding (even
-        if it would be possible for another instance to respond (e.g. with UDP processing)).
-        As such transports should rely on only receiving messages that they created
-        (opposed to `assert message.transport is self`).
-        `transport_data` is data that the transport instance wishes to store with
-        this message for later use. What is stored is up to the transport, and it is
-        up to the transport implementation to correctly handle it.
-        `remote_client` is a representation of the remote client that sent this DNS
-        request. This value is primarily to allow logging and debugging of invalid
-        requests. Whilst transport instances must set this value, they should not
-        use it for processing.
+        Args:
+            raw_data: The raw message pulled from the transport. It will parsed
+                as a DNS message.
+
+            transport: The transport instance that created this message (e.g. `self`).
+                Messages must only be returned to this transport instance when responding (even
+                if it would be possible for another instance to respond (e.g. with UDP processing)).
+                As such transports should rely on only receiving messages that they created
+                (opposed to `assert message.transport is self`).
+
+            transport_data: Data that the transport instance wishes to store with
+                this message for later use. What is stored is up to the transport, and it is
+                up to the transport implementation to correctly handle it.
+
+            remote_client: Representation of the remote client that sent this DNS
+                request. This value is primarily to allow logging and debugging of invalid
+                requests. Whilst transport instances must set this value, they should NOT
+                use it for processing.
         """
         # Note: We used to have checks on the validity of the input arguments.
         # However as this function is internal to this package and this package
@@ -139,11 +164,15 @@ class TransportBase:
     """Base class for all transports"""
 
     def __init__(self, settings: Settings) -> None:
+        """
+        Args:
+            settings: settings of the server this transport is attached to
+        """
         self.settings = settings
         # TODO: setup logging
         return
 
-    def start_server(self, timeout=60) -> None:
+    def start_server(self, timeout: int = 60) -> None:
         """Start transport's server"""
         raise NotImplementedError()
 
@@ -164,7 +193,11 @@ class TransportBase:
 # ..............................................................................
 @dataclass
 class UDPMessageData:
-    """Message.transport_data for UDP transports"""
+    """Message.transport_data for UDP transports
+
+    Attributes:
+        remote_address: UDP peername that this message was received from
+    """
 
     remote_address: Tuple[str, int]
 
@@ -182,6 +215,7 @@ class UDPv4Transport(TransportBase):
         return
 
     def start_server(self, timeout=60) -> None:
+        """As per parent class"""
         start_time = time.time()
         while (time.time() - start_time) < timeout:
             try:
@@ -198,16 +232,19 @@ class UDPv4Transport(TransportBase):
         return
 
     def receive_message(self) -> MessageContainer:
+        """As per parent class"""
         data, remote_address = self.socket.recvfrom(512)
         message = MessageContainer(data, self, UDPMessageData(remote_address), remote_address)
         return message
 
     def send_message_response(self, message: MessageContainer) -> None:
+        """As per parent class"""
         data = message.get_response_bytes()
         self.socket.sendto(data, message.transport_data.remote_address)
         return
 
     def stop_server(self) -> None:
+        """As per parent class"""
         self.socket.close()
         return
 
@@ -225,14 +262,27 @@ class UDPv6Transport(UDPv4Transport):
 # ..............................................................................
 @dataclass
 class TCPMessageData:
-    """Message.transport_data for TCP transports"""
+    """Message.transport_data for TCP transports
+
+    Attributes:
+        socket: the socket this message was received on
+    """
 
     socket: socket.socket
 
 
 @dataclass
 class CachedConnection:
-    "Dataclass for storing information about a TCP connection"
+    """Dataclass for storing information about a TCP connection
+
+    Attributes:
+        connection: the actual socket we are connected to
+        remote_address: the socket's peername
+        last_data_time: timestamp when we last received data from this socket
+        selector_key: key used by our TCP Transport's selector
+        cache_key: the key used to store this connection in the cache
+    """
+
     connection: socket.socket
     remote_address: Tuple[str, int]
     last_data_time: float
@@ -273,7 +323,8 @@ class TCPv4Transport(TransportBase):
         self.socket_selector_key = self.selector.register(self.socket, selectors.EVENT_READ)
         return
 
-    def start_server(self, timeout=60) -> None:
+    def start_server(self, timeout: int = 60) -> None:
+        """As per parent class"""
         start_time = time.time()
         while (time.time() - start_time) < timeout:
             try:
@@ -292,6 +343,7 @@ class TCPv4Transport(TransportBase):
         return
 
     def receive_message(self) -> MessageContainer:
+        """As per parent class"""
         connection, remote_address = self._get_next_connection()
         packed_length = recv_data(2, connection)
 
@@ -301,6 +353,7 @@ class TCPv4Transport(TransportBase):
         return MessageContainer(data, self, TCPMessageData(connection), remote_address)
 
     def send_message_response(self, message: MessageContainer) -> None:
+        """As per parent class"""
         data = message.get_response_bytes()
         encoded_length = struct.pack("!H", len(data))
         try:
@@ -315,6 +368,7 @@ class TCPv4Transport(TransportBase):
         return
 
     def stop_server(self) -> None:
+        """As per parent class"""
         # Stop listening
         self._close_connection(self.socket)
         # Cleanup existing connections
@@ -443,7 +497,9 @@ class TCPv4Transport(TransportBase):
                     quiet_connections.append(cache)
 
             if cached_connections_len - len(quiet_connections) > self.CONNECTION_CACHE_LIMIT:
-                # remove all connections
+                # Even removing all quiet_connections will be above our desired limit,
+                # there is no point in restricting how many we close so close all
+                # quiet_connections
                 cache_clear = [c.cache_key for c in quiet_connections]
             else:
                 # attempt to reduce cache to self.CONNECTION_CACHE_TARGET

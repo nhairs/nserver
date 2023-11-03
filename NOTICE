@@ -4,3 +4,7 @@ This software includes the following licenced software:
     Licenced under The MIT Licence
     Source: https://github.com/nhairs/python-package-template
 
+  - mkdocstrings-python
+    Copyright (c) 2021, Timothée Mazzucotelli
+    Licenced under ISC Licence
+    Source: https://github.com/mkdocstrings/python

@@ -4,7 +4,7 @@
 import logging
 
 # Note: Optional can only be replaced with `| None` in 3.10+
-from typing import List, Callable, Dict, Pattern, Optional, Type
+from typing import List, Callable, Dict, Pattern, Optional, Union, Type, Any
 
 ## Installed
 import dnslib
@@ -13,7 +13,7 @@ import dnslib
 from .exceptions import InvalidMessageError
 from .models import Query, Response
 from .records import RecordBase
-from .rules import RuleBase, WildcardStringRule, RegexRule
+from .rules import RuleBase, WildcardStringRule, RegexRule, ResponseFunction
 from .settings import Settings
 from .transport import TransportBase, UDPv4Transport, UDPv6Transport, TCPv4Transport
 
@@ -37,8 +37,9 @@ class NameServer:
     def __init__(self, name: str, settings: Optional[Settings] = None) -> None:
         """Initialise NameServer
 
-        args:
+        Args:
             name: The name of the server. This is used for internal logging.
+            settings: settings ot use with this `NameServer` instance
         """
         self.name = name
         self.rules: List[RuleBase] = []
@@ -64,51 +65,69 @@ class NameServer:
         return
 
     def register_rule(self, rule: RuleBase) -> None:
-        """Register the given rule."""
+        """Register the given rule
+
+        Args:
+            rule: the rule to register
+        """
         self._debug(f"Registered rule: {rule!r}")
         self.rules.append(rule)
         return
 
-    def register_blueprint(self, blueprint, rule) -> None:
-        """Register a blueprint using the given rule.
+    # def register_blueprint(self, blueprint, rule: Union[str, Pattern, RuleBase]) -> None:
+    #     """Register a blueprint using the given rule.
+    #
+    #
+    #     If the rule triggers, the query is passed to the Blueprint to determine
+    #     if a rule matches. Just because a rule matches the blueprint does not
+    #     mean that the rule will match any rule in the blueprint.
+    #
+    #     Args:
+    #         blueprint: the `Blueprint` to attach
+    #         rule: The rule to use to match to this `blueprint`
+    #             - If rule is a `str` is interpreted as a the input for a WildcardStringRule.
+    #             - If rule is a `Pattern` is interpreted as the input for a RegexRule.
+    #             - If rule is a instance of `RuleBase` is used as is.
+    #
+    #     Note: that all rules are internally converted to a `BlueprintRule`.
+    #     """
+    #     raise NotImplementedError()
 
-        If the rule triggers, the query is passed to the Blueprint to determine
-        if a rule matches. Just because a rule matches the blueprint does not
-        mean that the rule will match any rule in the blueprint.
+    def register_before_first_query(self, func: Callable[[], None]) -> None:
+        """Register a function to be run before the first query.
 
-        If rule is a str is interpreted as a the input for a WildcardStringRule.
-        If rule is a regex is interpreted as the input for a RegexRule.
-        If rule is a instance of RuleBase is used as is.
-
-        Note: that all rules are internally converted to a BlueprintRule.
+        Args:
+            func: the function to register
         """
-        raise NotImplementedError()
-
-    def register_before_first_query(self, func) -> None:
-        """Register a function to be run before the first query."""
         self.hooks["before_first_query"].append(func)
         return
 
-    def register_before_query(self, func) -> None:
+    def register_before_query(self, func: Callable[[Query], Any]) -> None:
         """Register a function to be run before every query.
 
-        If `func` returns anything other than null will stop processing the
-        incoming query and continue to result processing with the return value.
+        Args:
+            func: the function to register
+                If `func` returns anything other than `None` will stop processing the
+                incoming `Query` and continue to result processing with the return value.
         """
         self.hooks["before_query"].append(func)
         return
 
-    def register_after_query(self, func) -> None:
+    def register_after_query(self, func: Callable[[Response], Response]) -> None:
         """Register a function to be run on the result of a query.
 
-        `func` must accept an instance of `Response` and must return an instance
-        of `Response`. It can do nothing, modify or replace the response.
+        Args:
+            func: the function to register
         """
         self.hooks["after_query"].append(func)
         return
 
     def run(self) -> int:
-        """Start running the server"""
+        """Start running the server
+
+        Returns:
+            `exit_code`, `0` if exited normally
+        """
         # Setup Logging
         console_logger = logging.StreamHandler()
         console_logger.setLevel(self.settings.console_log_level)
@@ -168,31 +187,38 @@ class NameServer:
 
     ## Decorators
     ## -------------------------------------------------------------------------
-    def rule(self, rule_, allowed_qtypes, case_sensitive=False):  # pylint: disable=unused-argument
+    def rule(
+        self, rule_: Union[str, Pattern], allowed_qtypes: List[str], case_sensitive: bool = False
+    ):  # pylint: disable=unused-argument
         """Decorator for registering a function as a rule.
 
-        If regex, then RegexRule, if str then WildcardStringRule.
+        Args:
+            rule_: if `Pattern` then `RegexRule`, if `str` then `WildcardStringRule`.
+            allowed_qtypes: Only match the given DNS query types
+            case_sensitive: how to handle case when matching the rule
         """
 
-        def decorator(func):
+        def decorator(func: ResponseFunction):
             nonlocal rule_
             nonlocal allowed_qtypes
             nonlocal case_sensitive
+            actual_rule: RuleBase
+
             if isinstance(rule_, str):
-                rule_ = WildcardStringRule(
+                actual_rule = WildcardStringRule(
                     rule_, allowed_qtypes, func, case_sensitive=case_sensitive
                 )
             elif isinstance(  # pylint: disable=isinstance-second-argument-not-valid-type
                 rule_, Pattern
             ):
-                # Note: I've disabled thiss type check thing as it currently works and it might
+                # Note: I've disabled this type check thing as it currently works and it might
                 # vary between versions of python and other bugs.
                 # see also: https://stackoverflow.com/questions/6102019/type-of-compiled-regex-object-in-python
-                rule_ = RegexRule(rule_, allowed_qtypes, func, case_sensitive=case_sensitive)
+                actual_rule = RegexRule(rule_, allowed_qtypes, func, case_sensitive=case_sensitive)
             else:
                 raise ValueError(f"Could not handle rule: {rule_!r}")
 
-            self.register_rule(rule_)
+            self.register_rule(actual_rule)
             return func
 
         return decorator
@@ -204,7 +230,7 @@ class NameServer:
         before any further processesing.
         """
 
-        def decorator(func):
+        def decorator(func: Callable[[], None]):
             self.register_before_first_query(func)
             return func
 
@@ -216,7 +242,7 @@ class NameServer:
         These functions are called before processing each query.
         """
 
-        def decorator(func):
+        def decorator(func: Callable[[Query], Any]):
             self.register_before_query(func)
             return func
 
@@ -229,7 +255,7 @@ class NameServer:
         response.
         """
 
-        def decorator(func):
+        def decorator(func: Callable[[Response], Response]):
             self.register_after_query(func)
             return func
 
@@ -242,6 +268,12 @@ class NameServer:
 
         This is the main function that implements all the hooks, rule processing,
         error handling, etc.
+
+        Args:
+            message: the DNS query to process
+
+        Returns:
+            the DNS response
         """
 
         # pylint: disable=too-many-branches
@@ -306,13 +338,13 @@ class NameServer:
             # Ensure result is a Response object
             if result is None:
                 result = Response()
+            elif isinstance(result, Response):
+                pass
             elif isinstance(result, RecordBase) and result.__class__ is not RecordBase:
                 result = Response(result)
-            elif isinstance(result, list):
-                for item in result:
-                    if not isinstance(item, RecordBase) or result.__class__ is RecordBase:
-                        raise TypeError()
-            elif not isinstance(result, Response):
+            elif isinstance(result, list) and all(isinstance(item, RecordBase) for item in result):
+                result = Response(result)
+            else:
                 raise TypeError(f"Cannot process result: {result!r}")
 
             # run after_query hooks

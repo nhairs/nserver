@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nserver"
-version = "0.4.0"
+version = "1.0.0"
 description = "DNS Name Server Framework"
 authors  = [
     {name = "Nicholas Hairs", email = "info+nserver@nicholashairs.com"},
@@ -19,41 +19,55 @@ dependencies = [
 
 # Extra information
 readme = "README.md"
-license = {file = "LICENCE"}
+license = {text = "MIT"}
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
+    "Typing :: Typed",
     "Topic :: Internet",
     "Topic :: Internet :: Name Service (DNS)",
 ]
 
 [project.urls]
-homepage = "https://github.com/nhairs/nserver"
+homepage = "https://nhairs.github.io/nserver/latest/"
+github = "https://github.com/nhairs/nserver"
 
 [project.optional-dependencies]
-dev = [  # Centralise dev dependencies
-    ## Building Python Package
+build = [
     "setuptools",
     "wheel",
+]
+
+dev = [
+    ### dev.sh dependencies
     ## Formatting / Linting
+    "validate-pyproject[all]",
     "black",
     "pylint",
     "mypy",
     ## Testing
     "pytest",
-    ## Docs
+    ## REPL
+    "bpython",
+]
+
+docs = [
+    "black",
     "mkdocs",
     "mkdocs-material>=8.5",
     "mkdocs-awesome-pages-plugin",
     "mdx_truly_sane_lists",
-    ## REPL
-    "bpython",
+    "mkdocstrings[python]",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mike",
 ]
 
 [tool.setuptools.package-data]

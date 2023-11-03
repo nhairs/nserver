@@ -26,7 +26,8 @@ RUN --mount=target=/var/lib/apt/lists,type=cache,sharing=locked \
         python3.7 python3.7-dev python3.7-distutils \
         python3.9 python3.9-dev python3.9-distutils \
         python3.10 python3.10-dev python3.10-distutils \
-        python3.11 python3.11-dev python3.11-distutils
+        python3.11 python3.11-dev python3.11-distutils \
+        python3.12 python3.12-dev python3.12-distutils
 
 ## pypy
 ADD lib/python/install_pypy.sh /tmp

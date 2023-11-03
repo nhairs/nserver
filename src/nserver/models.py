@@ -16,29 +16,39 @@ class Query:  # pylint: disable=too-few-public-methods
     """Simplified version of a DNS query.
 
     This class acts as an adaptor for dnslib classes.
+
+    Attributes:
+        type: DNS Query Type
+        name: DNS query domain name. Note: `.` is stripped by default, as such the "root"
+            will be `""` (empty string) rather than `"."`.
     """
 
-    def __init__(self, type_: str, name: str) -> None:
-        type_ = type_.upper()
-        if type_ not in dnslib.QTYPE.reverse:
-            raise ValueError(f"Unsupported QTYPE {type_!r}")
-        self.type = type_
+    def __init__(self, qtype: str, name: str) -> None:
+        """
+        Args:
+            qtype: The DNS Query Type in string form
+            name: The name of the query
+        """
+        qtype = qtype.upper()
+        if qtype not in dnslib.QTYPE.reverse:
+            raise ValueError(f"Unsupported QTYPE {qtype!r}")
+        self.type = qtype
         self.name = name
         return
 
     @classmethod
-    def from_dns_question(cls, question):
-        """Create a new query from a dnslib dns question"""
+    def from_dns_question(cls, question: dnslib.DNSQuestion) -> "Query":
+        """Create a new query from a `dnslib.DNSQuestion`"""
         if question.qtype not in dnslib.QTYPE.forward:
             raise ValueError(f"Invalid QTYPE: {question.qtype}")
 
         query = cls(dnslib.QTYPE[question.qtype], str(question.qname).rstrip("."))
         return query
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.type!r}, {self.name!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
 
@@ -60,6 +70,13 @@ class Response:
         authority: OptionalRecordList = None,
         error_code: int = dnslib.RCODE.NOERROR,
     ) -> None:
+        """
+        Args:
+            answers: response answer records
+            additional: response additional records
+            authority: response authority records
+            error_code: DNS response error code
+        """
         if answers is None:
             answers = []
         elif isinstance(answers, RecordBase):
@@ -83,10 +100,10 @@ class Response:
         self.error_code = error_code
         return
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}(answers={self.answers!r}, additional={self.additional!r}, authority={self.authority!r}, error_code={self.error_code!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
     def get_answer_records(self) -> List[dnslib.RD]:

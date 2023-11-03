@@ -13,7 +13,14 @@ import logging
 ### ============================================================================
 @dataclass
 class Settings:
-    "Dataclass for NameServer settings"
+    """Dataclass for NameServer settings
+
+    Attributes:
+        server_transport: What `Transport` to use. See `nserver.server.TRANSPORT_MAP` for options.
+        server_address: What address `server_transport` will bind to.
+        server_port: what port `server_port` will bind to.
+    """
+
     server_transport: str = "UDPv4"
     server_address: str = "localhost"
     server_port: int = 9953
