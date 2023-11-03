@@ -7,9 +7,9 @@
     ],
     "properties": {
       "git_branch": "main",
-      "git_commit": "16023e31cef9d194a2b3def96975425cc285305a",
-      "git_commit_short": "16023e3",
-      "build_timestamp": "1698990138"
+      "git_commit": "628db055848c6543641d514b4186f8d953b6af7d",
+      "git_commit_short": "628db05",
+      "build_timestamp": "1698994934"
     }
   }
 ]
