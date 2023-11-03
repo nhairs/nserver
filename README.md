@@ -15,9 +15,9 @@ NServer is a Python framework for building customised DNS name servers with a fo
 
 
 ## Licence
-This project is licenced under the MIT Licence - see [`LICENCE`](https://github.com/nahirs/nserver/blob/master/LICENCE).
+This project is licenced under the MIT Licence - see [`LICENCE`](https://github.com/nhairs/nserver/blob/main/LICENCE).
 
-This project may include other open source licenced software - see [`NOTICE`](https://github.com/nhairs/nserver/blob/master/NOTICE).
+This project may include other open source licenced software - see [`NOTICE`](https://github.com/nhairs/nserver/blob/main/NOTICE).
 
 ## Authors
 A project by Nicholas Hairs - [www.nicholashairs.com](https://www.nicholashairs.com).

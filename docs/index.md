@@ -49,15 +49,15 @@ Please [submit an issue on github](https://github.com/nhairs/nserver/issues).
 
 In the case of bug reports, please help us help you by following best practices [^1^](https://marker.io/blog/write-bug-report/) [^2^](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html).
 
-In the case of feature requests, please provide background to the problem you are trying to solve so to help find a solution that makes the most sense for the library as well as your usecase. Before making a feature request consider looking at my (roughly written) [design notes](https://github.com/nhairs/nserver/blob/master/DESIGN_NOTES.md).
+In the case of feature requests, please provide background to the problem you are trying to solve so to help find a solution that makes the most sense for the library as well as your usecase. Before making a feature request consider looking at my (roughly written) [design notes](https://github.com/nhairs/nserver/blob/main/DESIGN_NOTES.md).
 
 ## Contributing
 I am still working through open source licencing and contributing, so not taking PRs at this point in time. Instead raise and issue and I'll try get to it as soon a feasible.
 
 ## Licence
-This project is licenced under the MIT Licence - see [`LICENCE`](https://github.com/nhairs/nserver/blob/master/LICENCE).
+This project is licenced under the MIT Licence - see [`LICENCE`](https://github.com/nhairs/nserver/blob/main/LICENCE).
 
-This project includes other open source licenced software - see [`NOTICE`](https://github.com/nhairs/nserver/blob/master/NOTICE).
+This project includes other open source licenced software - see [`NOTICE`](https://github.com/nhairs/nserver/blob/main/NOTICE).
 
 ## Authors
 A project by Nicholas Hairs - [www.nicholashairs.com](https://www.nicholashairs.com).
