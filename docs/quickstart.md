@@ -31,7 +31,7 @@ Here's what this code does:
   - [`Query`][nserver.models.Query] - instances of this class will be passed to our rule functions so that we can inspect the incoming DNS query
   - [`A`][nserver.records.A] - the class used to create DNS `A` records
 
-2. Next we create a `NameServer` instance for our application to use. The name we give the server will be used to help distinguish it from others that may also be running.
+2. Next we create a `NameServer` instance for our application to use. The name we give the server will be used to help distinguish it from others that are also running.
 
 3. We then use the [`rule`][nserver.server.NameServer.rule] decorator to tell our server when to trigger our function. In this case we will trigger for `A` queries that exactly match the name `example.com`.
 
@@ -50,8 +50,6 @@ python3 example_server.py
 ```{.none .no-copy}
 [INFO] Starting UDPv4Transport(address='localhost', port=9953)
 ```
-
-As we are running the server using the default settings, it will be listening using `UDP` on `localhost:9953`.
 
 We can access it using `dig`.
 
@@ -81,12 +79,12 @@ example.com.		300	IN	A	1.2.3.4
 
 ## Rules
 
-[Rules][nserver.rules] are tell our server which queries to send to which functions. NServer ships with two rule types:
+[Rules][nserver.rules] tell our server which queries to send to which functions. NServer ships with two rule types:
 
-- [`WildcardStringRule`][nserver.rules.WildcardStringRule] which provides allows writing rules using a shorthand syntax.
-- [`RegexRule`][nserver.rules.RegexRule] which allows for matching using regular expressions.
+- [`WildcardStringRule`][nserver.rules.WildcardStringRule] which allows writing rules using a shorthand syntax.
+- [`RegexRule`][nserver.rules.RegexRule] which uses regular expressions for matching.
 
-When using the [`NameServer.rule`][nserver.server.NameServer.rule] decorator `str` rules will be used to create a `WildcardStringRule` whilst `Pattern` rules will be used to create a `RegexRule`. This decorator also return the original function unchanged so it is possible to decorate the same function with multiple rules.
+When using the [`NameServer.rule`][nserver.server.NameServer.rule] decorator string (`str`) rules will be used to create a `WildcardStringRule` whilst regular expression (`typing.Pattern`) rules will create a `RegexRule`. This decorator also return the original function unchanged meaning it is possible to decorate the same function with multiple rules.
 
 ```python
 @server.rule("{base_name}", ["A"])
@@ -96,7 +94,7 @@ def we_only_have_three_servers_for_everything(query):
     return list(A(query.name, f"1.1.1.{i+1}") for i in range(3))
 ```
 
-Rules can also be added to a server by calling it's [`register_rule`][nserver.server.NameServer.register_rule] method with an exiting rule.
+Rules can also be added to a server by calling the [`register_rule`][nserver.server.NameServer.register_rule] method with an exiting rule.
 
 ```python
 from nserver import RegexRule
@@ -110,7 +108,7 @@ server.register_rule(
 )
 ```
 
-By default all rules match in a case-insensitive manner as this is the expected behaviour for name servers operating on the internet. You can override this by setting `case_sensitive=True` in the constructors or `rule` decorator.
+By default all rules match in a case-insensitive manner. This is the expected behaviour for name servers operating on the internet. You can override this by setting `case_sensitive=True` in the constructors or `rule` decorator.
 
 ### The `WildcardStringRule`
 
@@ -128,15 +126,16 @@ For example:
 
 ## Responses
 
-Our rule functions are expected to return only the following types:
+Rule functions are expected to return only the following types:
 
+- `None`
 - A single record instance (of any type)
 - A list of record instances (of any record type, including mixed)
 - A [`Response`][nserver.models.Response] instance
 
-When records are returned, these will automatically be added to a `Response` instance as answer records. For simple responses this is usually enough.
+When records are returned, these will automatically be added to a `Response` instance as answer records. For simple responses this is usually enough. When `None` is returned it will be converted to an empty response.
 
-However if you wish to return Additional or Authority Records, or change the Error Code you will need to return using a `Response` instance.
+However if you wish to return Additional or Authority Records, or change the Error Code you will need to return a `Response` instance.
 
 For example a typical `NS` lookup when our application is the authoritive server for the domain may look like this:
 
