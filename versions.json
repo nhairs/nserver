@@ -2,6 +2,14 @@
   {
     "version": "1.0.0",
     "title": "1.0.0",
-    "aliases": []
+    "aliases": [
+      "latest"
+    ],
+    "properties": {
+      "git_branch": "main",
+      "git_commit": "16023e31cef9d194a2b3def96975425cc285305a",
+      "git_commit_short": "16023e3",
+      "build_timestamp": "1698990138"
+    }
   }
 ]

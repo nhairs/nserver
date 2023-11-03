@@ -1,67 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/external-resources/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/external-resources/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/production-deployment/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/production-deployment/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/quickstart/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/quickstart/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/exceptions/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/exceptions/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/models/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/models/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/records/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/records/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/rules/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/rules/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/server/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/server/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/settings/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/settings/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/transport/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/transport/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://nhairs.github.io/nserver/1.0.0/reference/nserver/util/</loc>
+         <loc>https://nhairs.github.io/nserver/latest/reference/nserver/util/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
     </url>

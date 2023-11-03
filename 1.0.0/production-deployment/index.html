@@ -8,7 +8,7 @@
       
       
       
-        <link rel="canonical" href="https://nhairs.github.io/nserver/1.0.0/production-deployment/">
+        <link rel="canonical" href="https://nhairs.github.io/nserver/latest/production-deployment/">
       
       
         <link rel="prev" href="../quickstart/">
@@ -728,7 +728,7 @@
 </ul>
 <h2 id="deployment-using-coredns">Deployment using CoreDNS<a class="headerlink" href="#deployment-using-coredns" title="Permanent link">🔗</a></h2>
 <p><a href="https://coredns.io/">CoreDNS</a> is a extendable DNS server written in Go. It has many plugins available which we can use to quickly configure our public facing servers allowing us to keep our NServer application private.</p>
-<p>In order to get the most performance out of our NServer instance we should operate it using the <code>TCPv4</code> <a class="autorefs autorefs-internal" href="../reference/nserver/transport/#nserver.transport">transport</a> as this will allow CoreDNS to reuse the connection for many queries whilst ensuring that even under high load queries are not lost.</p>
+<p>In order to get the most performance out of our NServer instance we should operate it using the <code>TCPv4</code> transport as this will allow CoreDNS to reuse the connection for many queries whilst ensuring that even under high load queries are not lost.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The following Corefile uses <a href="https://coredns.io/explugins/">external plugins</a> which will require you to <a href="https://coredns.io/2017/07/25/compile-time-enabling-or-disabling-plugins/#build-with-compile-time-configuration-file">build CoreDNS with the external plugins</a>.</p>

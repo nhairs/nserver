@@ -8,7 +8,7 @@
       
       
       
-        <link rel="canonical" href="https://nhairs.github.io/nserver/1.0.0/">
+        <link rel="canonical" href="https://nhairs.github.io/nserver/latest/">
       
       
       
@@ -814,14 +814,30 @@
 </div>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">🔗</a></h2>
 <ul>
-<li>TODO</li>
+<li><strong>Flexibility:</strong> Receive and respond to DNS queries using python functions</li>
+<li><strong>Speed:</strong> comfortably handle 1000 queries per second on a single thread</li>
+<li><strong>Protocols:</strong> supports UDP, TCP DNS queries<ul>
+<li>TCP server support request pipelining and connection multiplexing</li>
+</ul>
+</li>
+<li><strong>Development:</strong> fully typed for your static analysis / linting needs</li>
 </ul>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">🔗</a></h2>
-<p>Follow our <a href="/quickstart">Quickstart Guide</a>.</p>
-<p>It's worth reading our <a href="/concepts">Core Concepts</a> as well to understand all our "defined words".</p>
+<p>Follow our <a href="quickstart/">Quickstart Guide</a>.</p>
+<div class="highlight"><span class="filename">example server from quickstart guide</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">nserver</span> <span class="kn">import</span> <span class="n">NameServer</span><span class="p">,</span> <span class="n">Query</span><span class="p">,</span> <span class="n">A</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">server</span> <span class="o">=</span> <span class="n">NameServer</span><span class="p">(</span><span class="s2">&quot;example&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nd">@server</span><span class="o">.</span><span class="n">rule</span><span class="p">(</span><span class="s2">&quot;example.com&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">])</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span> <span class="nf">example_a_records</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="n">Query</span><span class="p">):</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">return</span> <span class="n">A</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;1.2.3.4&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">server</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
 <h2 id="bugs-feature-requests-etc">Bugs, Feature Requests etc<a class="headerlink" href="#bugs-feature-requests-etc" title="Permanent link">🔗</a></h2>
 <p>Please <a href="https://github.com/nhairs/nserver/issues">submit an issue on github</a>.</p>
-<p>In the case of bug reports, please help us help you by following best practices (<a href="https://marker.io/blog/write-bug-report/">1</a>) (<a href="https://www.chiark.greenend.org.uk/~sgtatham/bugs.html">2</a>]).</p>
+<p>In the case of bug reports, please help us help you by following best practices (<a href="https://marker.io/blog/write-bug-report/">1</a>) (<a href="https://www.chiark.greenend.org.uk/~sgtatham/bugs.html">2</a>).</p>
 <p>In the case of feature requests, please provide background to the problem you are trying to solve so to help find a solution that makes the most sense for the library as well as your usecase. Before making a feature request consider looking at my (roughly written) <a href="https://github.com/nhairs/nserver/blob/master/DESIGN_NOTES.md">design notes</a>.</p>
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">🔗</a></h2>
 <p>I am still working through open source licencing and contributing, so not taking PRs at this point in time. Instead raise and issue and I'll try get to it as soon a feasible.</p>
