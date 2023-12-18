@@ -4,19 +4,18 @@
 import logging
 
 # Note: Optional can only be replaced with `| None` in 3.10+
-from typing import List, Callable, Dict, Pattern, Optional, Union, Type, Any
+from typing import List, Dict, Pattern, Optional, Union, Type
 
 ## Installed
 import dnslib
 
 ## Application
 from .exceptions import InvalidMessageError
-from .models import Query, Response
-from .records import RecordBase
 from .rules import RuleBase, WildcardStringRule, RegexRule, ResponseFunction
 from .settings import Settings
 from .transport import TransportBase, UDPv4Transport, UDPv6Transport, TCPv4Transport
 
+from . import middleware
 
 ### CONSTANTS
 ### ============================================================================
@@ -39,17 +38,25 @@ class NameServer:
 
         Args:
             name: The name of the server. This is used for internal logging.
-            settings: settings ot use with this `NameServer` instance
+            settings: settings to use with this `NameServer` instance
         """
         self.name = name
         self.rules: List[RuleBase] = []
-        self.hooks: Dict[str, List[Callable]] = {
-            "before_first_query": [],
-            "before_query": [],
-            "after_query": [],
-        }
         self._logger = logging.getLogger(f"nserver.i.{self.name}")
-        self._before_first_query_run = False
+
+        self.hook_middleware = middleware.HookMiddleware()
+        self.exception_handler_middleware = middleware.ExceptionHandlerMiddleware()
+        self.raw_exception_handler_middleware = middleware.RawRecordExceptionHandlerMiddleware()
+
+        self._user_query_middleware: List[middleware.QueryMiddleware] = []
+        self._query_middleware_stack: List[
+            Union[middleware.QueryMiddleware, middleware.QueryMiddlewareCallable]
+        ] = []
+
+        self._user_raw_record_middleware: List[middleware.RawRecordMiddleware] = []
+        self._raw_record_middleware_stack: List[
+            Union[middleware.RawRecordMiddleware, middleware.RawRecordMiddlewareCallable]
+        ] = []
 
         self.settings = settings if settings is not None else Settings()
 
@@ -93,16 +100,16 @@ class NameServer:
     #     """
     #     raise NotImplementedError()
 
-    def register_before_first_query(self, func: Callable[[], None]) -> None:
+    def register_before_first_query(self, func: middleware.BeforeFirstQueryHook) -> None:
         """Register a function to be run before the first query.
 
         Args:
             func: the function to register
         """
-        self.hooks["before_first_query"].append(func)
+        self.hook_middleware.before_first_query.append(func)
         return
 
-    def register_before_query(self, func: Callable[[Query], Any]) -> None:
+    def register_before_query(self, func: middleware.BeforeQueryHook) -> None:
         """Register a function to be run before every query.
 
         Args:
@@ -110,16 +117,84 @@ class NameServer:
                 If `func` returns anything other than `None` will stop processing the
                 incoming `Query` and continue to result processing with the return value.
         """
-        self.hooks["before_query"].append(func)
+        self.hook_middleware.before_query.append(func)
         return
 
-    def register_after_query(self, func: Callable[[Response], Response]) -> None:
+    def register_after_query(self, func: middleware.AfterQueryHook) -> None:
         """Register a function to be run on the result of a query.
 
         Args:
             func: the function to register
         """
-        self.hooks["after_query"].append(func)
+        self.hook_middleware.after_query.append(func)
+        return
+
+    def register_middleware(self, query_middleware: middleware.QueryMiddleware) -> None:
+        """Add a `QueryMiddleware` to this server.
+
+        New in `1.1.0`.
+
+        Args:
+            query_middleware: the middleware to add
+        """
+        if self._query_middleware_stack:
+            # Note: we can use truthy expression as once processed there will always be at
+            # least one item in the stack
+            raise RuntimeError("Cannot register middleware after stack is created")
+        self._user_query_middleware.append(query_middleware)
+        return
+
+    def register_raw_middleware(self, raw_middleware: middleware.RawRecordMiddleware) -> None:
+        """Add a `RawRecordMiddleware` to this server.
+
+        New in `1.1.0`.
+
+        Args:
+            raw_middleware: the middleware to add
+        """
+        if self._raw_record_middleware_stack:
+            # Note: we can use truthy expression as once processed there will always be at
+            # least one item in the stack
+            raise RuntimeError("Cannot register middleware after stack is created")
+        self._user_raw_record_middleware.append(raw_middleware)
+        return
+
+    def register_exception_handler(
+        self, exception_class: Type[Exception], handler: middleware.ExceptionHandler
+    ) -> None:
+        """Register an exception handler for the `QueryMiddleware`
+
+        Only one handler can exist for a given exception type.
+
+        New in `1.1.0`.
+
+        Args:
+            exception_class: the type of exception to handle
+            handler: the function to call when handling an exception
+        """
+        if exception_class in self.exception_handler_middleware.exception_handlers:
+            raise ValueError("Exception handler already exists for {exception_class}")
+
+        self.exception_handler_middleware.exception_handlers[exception_class] = handler
+        return
+
+    def register_raw_exception_handler(
+        self, exception_class: Type[Exception], handler: middleware.RawRecordExceptionHandler
+    ) -> None:
+        """Register a raw exception handler for the `RawRecordMiddleware`.
+
+        Only one handler can exist for a given exception type.
+
+        New in `1.1.0`.
+
+        Args:
+            exception_class: the type of exception to handle
+            handler: the function to call when handling an exception
+        """
+        if exception_class in self.raw_exception_handler_middleware.exception_handlers:
+            raise ValueError("Exception handler already exists for {exception_class}")
+
+        self.raw_exception_handler_middleware.exception_handlers[exception_class] = handler
         return
 
     def run(self) -> int:
@@ -148,6 +223,7 @@ class NameServer:
 
         self._info(f"Starting {self.transport}")
         try:
+            self._prepare_middleware_stacks()
             self.transport.start_server()
         except Exception as e:  # pylint: disable=broad-except
             self._critical(e)
@@ -230,7 +306,7 @@ class NameServer:
         before any further processesing.
         """
 
-        def decorator(func: Callable[[], None]):
+        def decorator(func: middleware.BeforeFirstQueryHook):
             self.register_before_first_query(func)
             return func
 
@@ -242,7 +318,7 @@ class NameServer:
         These functions are called before processing each query.
         """
 
-        def decorator(func: Callable[[Query], Any]):
+        def decorator(func: middleware.BeforeQueryHook):
             self.register_before_query(func)
             return func
 
@@ -255,8 +331,40 @@ class NameServer:
         response.
         """
 
-        def decorator(func: Callable[[Response], Response]):
+        def decorator(func: middleware.AfterQueryHook):
             self.register_after_query(func)
+            return func
+
+        return decorator
+
+    def exception_handler(self, exception_class: Type[Exception]):
+        """Decorator for registering a function as an exception handler
+
+        New in `1.1.0`.
+
+        Args:
+            exception_class: The `Exception` class to register this handler for
+        """
+
+        def decorator(func: middleware.ExceptionHandler):
+            nonlocal exception_class
+            self.register_exception_handler(exception_class, func)
+            return func
+
+        return decorator
+
+    def raw_exception_handler(self, exception_class: Type[Exception]):
+        """Decorator for registering a function as an raw exception handler
+
+        New in `1.1.0`.
+
+        Args:
+            exception_class: The `Exception` class to register this handler for
+        """
+
+        def decorator(func: middleware.RawRecordExceptionHandler):
+            nonlocal exception_class
+            self.register_raw_exception_handler(exception_class, func)
             return func
 
         return decorator
@@ -264,10 +372,7 @@ class NameServer:
     ## Internal Functions
     ## -------------------------------------------------------------------------
     def _process_dns_record(self, message: dnslib.DNSRecord) -> dnslib.DNSRecord:
-        """Process the given DNSRecord.
-
-        This is the main function that implements all the hooks, rule processing,
-        error handling, etc.
+        """Process the given DNSRecord by sending it into the `RawRecordMiddleware` stack.
 
         Args:
             message: the DNS query to process
@@ -275,100 +380,76 @@ class NameServer:
         Returns:
             the DNS response
         """
+        if self._raw_record_middleware_stack is None:
+            raise RuntimeError(
+                "RawRecordMiddleware stack does not exist. Have you called _prepare_middleware?"
+            )
+        return self._raw_record_middleware_stack[0](message)
 
-        # pylint: disable=too-many-branches
+    def _prepare_middleware_stacks(self) -> None:
+        """Prepare all middleware for this server."""
+        self._prepare_request_middleware_stack()
+        self._prepare_raw_record_middleware_stack()
+        return
 
-        # We run before_first_query hook here so that _process_dns_record can be
-        # called without the underlying server existing.
-        if not self._before_first_query_run:
-            self._debug("Running before_first_query")
-            self._before_first_query_run = True  # If we error everything dies anyway
-            for func in self.hooks["before_first_query"]:
-                self._vdebug(f"Running before_first_query func: {func}")
-                func()
+    def _prepare_request_middleware_stack(self) -> None:
+        """Prepare the `QueryMiddleware` for this server."""
+        if self._query_middleware_stack:
+            # Note: we can use truthy expression as once processed there will always be at
+            # least one item in the stack
+            raise RuntimeError("QueryMiddleware stack already exists")
 
-        response = message.reply()
+        middleware_stack: List[middleware.QueryMiddleware] = [
+            self.exception_handler_middleware,
+            *self._user_query_middleware,
+            self.hook_middleware,
+        ]
+        rule_processor = middleware.RuleProcessor(self.rules)
 
-        if message.header.opcode != dnslib.OPCODE.QUERY:
-            self._info(f"Received non-query opcode: {message.header.opcode}")
-            # This server only response to DNS queries
-            response.header.set_rcode(dnslib.RCODE.NOTIMP)
-            return response
-
-        if len(message.questions) != 1:
-            self._info(f"Received len(questions_ != 1 ({message.questions})")
-            # To simplify things we only respond if there is 1 question.
-            # This is apparently common amongst DNS server implementations.
-            # For more information see the responses to this SO question:
-            # https://stackoverflow.com/q/4082081
-            response.header.set_rcode(dnslib.RCODE.REFUSED)
-            return response
-
-        try:
-            try:
-                query = Query.from_dns_question(message.questions[0])
-            except ValueError as e:
-                self._warning(e)
-                response.header.set_rcode(dnslib.RCODE.FORMERR)
-                return response
-
-            self._info(f"Question: {query.type} {query.name}")
-
-            # Process before_request hooks
-            for hook in self.hooks["before_query"]:
-                result = hook(query)
-                if result is not None:
-                    # before_request hook returned a response, stop processing
-                    self._debug(f"Got result from before_hook: {hook}")
-                    break
+        next_middleware: Optional[middleware.QueryMiddleware] = None
+        for query_middleware in middleware_stack[::-1]:
+            if next_middleware is None:
+                query_middleware.register_next_function(rule_processor)
             else:
-                # No hook returned a response
-                for rule in self.rules:
-                    rule_func = rule.get_func(query)
-                    if rule_func is not None:
-                        self._info(f"Matched Rule: {rule}")
-                        break
-                else:
-                    self._info("Did not match any rule")
-                    response.header.set_rcode(dnslib.RCODE.NXDOMAIN)
-                    return response
+                query_middleware.register_next_function(next_middleware)
+            next_middleware = query_middleware
 
-                result = rule_func(query)
+        self._query_middleware_stack.extend(middleware_stack)
+        self._query_middleware_stack.append(rule_processor)
+        return
 
-            # Ensure result is a Response object
-            if result is None:
-                result = Response()
-            elif isinstance(result, Response):
-                pass
-            elif isinstance(result, RecordBase) and result.__class__ is not RecordBase:
-                result = Response(result)
-            elif isinstance(result, list) and all(isinstance(item, RecordBase) for item in result):
-                result = Response(result)
+    def _prepare_raw_record_middleware_stack(self) -> None:
+        """Prepare the `RawRecordMiddleware` for this server."""
+        if not self._query_middleware_stack:
+            # Note: we can use truthy expression as once processed there will always be at
+            # least one item in the stack
+            raise RuntimeError("Must prepare QueryMiddleware stack first")
+
+        if self._raw_record_middleware_stack:
+            # Note: we can use truthy expression as once processed there will always be at
+            # least one item in the stack
+            raise RuntimeError("RawRecordMiddleware stack already exists")
+
+        middleware_stack: List[middleware.RawRecordMiddleware] = [
+            self.raw_exception_handler_middleware,
+            *self._user_raw_record_middleware,
+        ]
+
+        query_middleware_processor = middleware.QueryMiddlewareProcessor(
+            self._query_middleware_stack[0]
+        )
+
+        next_middleware: Optional[middleware.RawRecordMiddleware] = None
+        for raw_middleware in middleware_stack[::-1]:
+            if next_middleware is None:
+                raw_middleware.register_next_function(query_middleware_processor)
             else:
-                raise TypeError(f"Cannot process result: {result!r}")
+                raw_middleware.register_next_function(next_middleware)
+            next_middleware = raw_middleware
 
-            # run after_query hooks
-            for hook in self.hooks["after_query"]:
-                result = hook(result)
-
-            # Add results to response
-            # Note: we do this in the same try-except block so that if we get a
-            # malformed `Response` instance we response with nothing
-            response.add_answer(*result.get_answer_records())
-            response.add_ar(*result.get_additional_records())
-            response.add_auth(*result.get_authority_records())
-            response.header.set_rcode(result.error_code)
-
-        except Exception as e:  # pylint: disable=broad-except
-            self._error(f"Uncaught Exception {e}", exc_info=True)
-            # NOTE: We create a new response so that if an error occurs partway through
-            # constructing the response we response with an empty SERVFAIL response
-            # opposed to a partial SERVFAIL response.
-            response = message.reply()
-            response.header.set_rcode(dnslib.RCODE.SERVFAIL)
-            return response
-
-        return response
+        self._raw_record_middleware_stack.extend(middleware_stack)
+        self._raw_record_middleware_stack.append(query_middleware_processor)
+        return
 
     ## Logging
     ## -------------------------------------------------------------------------

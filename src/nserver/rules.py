@@ -15,7 +15,12 @@ from .records import RecordBase
 
 ### CLASSES
 ### ============================================================================
-ResponseFunction = Callable[[Query], Union[None, RecordBase, List[RecordBase], Response]]
+RuleResult = Union[Response, RecordBase, List[RecordBase], None]
+"""
+Type Alias for the result of a rule response function
+"""
+
+ResponseFunction = Callable[[Query], RuleResult]
 """
 Type Alias for functions that will be called when a rule is matched
 """

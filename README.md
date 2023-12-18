@@ -9,9 +9,9 @@ NServer is a Python framework for building customised DNS name servers with a fo
 
 ## Documentation
 
-[Documentation](https://nhairs.github.io/nserver/latest/)
-
-[Quickstart Guide](https://nhairs.github.io/nserver/latest/quickstart/)
+- [Documentation](https://nhairs.github.io/nserver/latest/)
+- [Quickstart Guide](https://nhairs.github.io/nserver/latest/quickstart/)
+- [Change Log](https://nhairs.github.io/nserver/latest/changelog/)
 
 
 ## Licence

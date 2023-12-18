@@ -11,7 +11,10 @@ watch:
 nav:
   - "Home": index.md
   - quickstart.md
+  - middleware.md
+  - error-handling.md
   - production-deployment.md
+  - changelog.md
   - external-resources.md
   - API Reference:
     - ... | reference/nserver/*
