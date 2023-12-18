@@ -79,14 +79,20 @@ example.com.		300	IN	A	1.2.3.4
 
 ## Rules
 
-[Rules][nserver.rules] tell our server which queries to send to which functions. NServer ships with two rule types:
+[Rules][nserver.rules] tell our server which queries to send to which functions. NServer ships with a number of rule types.
 
+- [`StaticRule`][nserver.rules.StaticRule] matches on an exact string.
+- [`ZoneRule`][nserver.rules.ZoneRule] matches the given domain and all subdomains.
 - [`WildcardStringRule`][nserver.rules.WildcardStringRule] which allows writing rules using a shorthand syntax.
 - [`RegexRule`][nserver.rules.RegexRule] which uses regular expressions for matching.
 
-When using the [`NameServer.rule`][nserver.server.NameServer.rule] decorator string (`str`) rules will be used to create a `WildcardStringRule` whilst regular expression (`typing.Pattern`) rules will create a `RegexRule`. This decorator also return the original function unchanged meaning it is possible to decorate the same function with multiple rules.
+The [`NameServer.rule`][nserver.server.NameServer.rule] decorator uses [`smart_make_rule`][nserver.rules.smart_make_rule] to automatically select the "best" matching rule type based on the input. This will result in string (`str`) rules will be used to create either a `WildcardStringRule` or a `StaticRule`, whilst regular expression (`typing.Pattern`) rules will create a `RegexRule`. This decorator also return the original function unchanged meaning it is possible to decorate the same function with multiple rules.
 
 ```python
+@saerver.rule("google-dns", ["A"])
+def this_will_be_a_static_rule(query):
+    return A(query.name, "8.8.8.8")
+
 @server.rule("{base_name}", ["A"])
 @server.rule("www.{base_name}", ["A"])
 @server.rule("mail.{base_name}", ["A"])

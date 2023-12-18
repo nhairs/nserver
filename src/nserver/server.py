@@ -11,7 +11,7 @@ import dnslib
 
 ## Application
 from .exceptions import InvalidMessageError
-from .rules import RuleBase, WildcardStringRule, RegexRule, ResponseFunction
+from .rules import smart_make_rule, RuleBase, ResponseFunction
 from .settings import Settings
 from .transport import TransportBase, UDPv4Transport, UDPv6Transport, TCPv4Transport
 
@@ -263,38 +263,31 @@ class NameServer:
 
     ## Decorators
     ## -------------------------------------------------------------------------
-    def rule(
-        self, rule_: Union[str, Pattern], allowed_qtypes: List[str], case_sensitive: bool = False
-    ):  # pylint: disable=unused-argument
-        """Decorator for registering a function as a rule.
+    def rule(self, rule_: Union[Type[RuleBase], str, Pattern], *args, **kwargs):
+        """Decorator for registering a function using an appropriate rule.
+
+        Changed in `1.1.0`: This function now uses [`smart_make_rule`][nserver.rules.smart_make_rule].
+        At the time of writing this allows for Rule classes be used directly,
+        and `str` inputs may result in a `StaticRule`. Future changes to
+        `smart_make_rule` will not be documented here.
 
         Args:
-            rule_: if `Pattern` then `RegexRule`, if `str` then `WildcardStringRule`.
-            allowed_qtypes: Only match the given DNS query types
-            case_sensitive: how to handle case when matching the rule
+            rule_: rule as per `nserver.rules.smart_make_rule`
+            args: extra arguments to provide
+            kwargs: extra keyword arguments to provide
+
+        Raises:
+            ValueError: if `func` is provided in `kwargs`.
         """
+
+        if "func" in kwargs:
+            raise ValueError("Must not provide `func` in kwargs")
 
         def decorator(func: ResponseFunction):
             nonlocal rule_
-            nonlocal allowed_qtypes
-            nonlocal case_sensitive
-            actual_rule: RuleBase
-
-            if isinstance(rule_, str):
-                actual_rule = WildcardStringRule(
-                    rule_, allowed_qtypes, func, case_sensitive=case_sensitive
-                )
-            elif isinstance(  # pylint: disable=isinstance-second-argument-not-valid-type
-                rule_, Pattern
-            ):
-                # Note: I've disabled this type check thing as it currently works and it might
-                # vary between versions of python and other bugs.
-                # see also: https://stackoverflow.com/questions/6102019/type-of-compiled-regex-object-in-python
-                actual_rule = RegexRule(rule_, allowed_qtypes, func, case_sensitive=case_sensitive)
-            else:
-                raise ValueError(f"Could not handle rule: {rule_!r}")
-
-            self.register_rule(actual_rule)
+            nonlocal args
+            nonlocal kwargs
+            self.register_rule(smart_make_rule(rule_, *args, func=func, **kwargs))
             return func
 
         return decorator

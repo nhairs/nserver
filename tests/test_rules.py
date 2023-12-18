@@ -8,7 +8,14 @@ import re
 ## Installed
 import pytest
 
-from nserver.rules import RegexRule, WildcardStringRule
+from nserver.rules import (
+    _wildcard_string_regex,
+    smart_make_rule,
+    StaticRule,
+    ZoneRule,
+    RegexRule,
+    WildcardStringRule,
+)
 from nserver.models import Query
 
 ## Application
@@ -29,6 +36,158 @@ def run_rule(rule, query, matches):
 
 ### TESTS
 ### ============================================================================
+@pytest.mark.parametrize(
+    "rule,expected",
+    (
+        ("*", True),
+        ("**", True),
+        ("{base_domain}", True),
+        ("*.com", True),
+        ("**.com", True),
+        ("", False),
+        ("foo.com", False),
+        ("{something}", False),
+    ),
+)
+def test_wildcard_string_regex(rule, expected):
+    assert bool(_wildcard_string_regex.search(rule)) is expected
+
+
+@pytest.mark.parametrize(
+    "rule,expected",
+    (
+        ("", StaticRule),
+        ("foo", StaticRule),
+        ("example.com", StaticRule),
+        ("foo-bar.com", StaticRule),
+        ("__dmarc.foo.com", StaticRule),
+        ("*.example.com", WildcardStringRule),
+        ("**.example.com", WildcardStringRule),
+        ("*.mail.{base_domain}", WildcardStringRule),
+        ("**.mail.{base_domain}", WildcardStringRule),
+        ("{base_domain}", WildcardStringRule),
+        ("*.{base_domain}", WildcardStringRule),
+        ("*.{base_domain}", WildcardStringRule),
+        (re.compile(".*"), RegexRule),
+    ),
+)
+def test_smart_make_rule_class(rule, expected):
+    assert isinstance(smart_make_rule(rule, ["A"], func=DUMMY_FUNCTION), expected)
+
+
+## StaticRule
+## -----------------------------------------------------------------------------
+class TestStaticRule:
+    @pytest.mark.parametrize(
+        "qtype,matches",
+        (
+            ("A", True),
+            ("AAAA", True),
+            ("TXT", False),
+        ),
+    )
+    def test_qtypes(self, qtype, matches):
+        rule = StaticRule("", ["A", "AAAA"], DUMMY_FUNCTION)
+        run_rule(rule, Query(qtype, ""), matches)
+        return
+
+    @pytest.mark.parametrize("match_string", ("test.com", "TEST.com", "test.COM", "TeSt.CoM"))
+    @pytest.mark.parametrize(
+        "name,matches",
+        (
+            ("test.com", True),
+            ("TEST.com", True),
+            ("test.COM", True),
+            ("TEST.COM", True),
+            ("TeSt.CoM", True),
+            ("", False),
+            ("com", False),
+            ("foo.test.com", False),
+        ),
+    )
+    def test_case_insensitive(self, match_string, name, matches):
+        rule = StaticRule(match_string, ["A"], DUMMY_FUNCTION, False)
+        run_rule(rule, Query("A", name), matches)
+        return
+
+    @pytest.mark.parametrize(
+        "name,matches",
+        (
+            ("test.com", True),
+            ("TEST.com", False),
+            ("test.COM", False),
+            ("TEST.COM", False),
+            ("TeSt.CoM", False),
+            ("", False),
+            ("com", False),
+            ("foo.test.com", False),
+        ),
+    )
+    def test_case_sensitive(self, name, matches):
+        rule = StaticRule("test.com", ["A"], DUMMY_FUNCTION, True)
+        run_rule(rule, Query("A", name), matches)
+        return
+
+
+## ZoneRule
+## -----------------------------------------------------------------------------
+class TestZoneRule:
+    @pytest.mark.parametrize(
+        "qtype,matches",
+        (
+            ("A", True),
+            ("AAAA", True),
+            ("TXT", False),
+        ),
+    )
+    def test_qtypes(self, qtype, matches):
+        rule = ZoneRule("", ["A", "AAAA"], DUMMY_FUNCTION)
+        run_rule(rule, Query(qtype, ""), matches)
+        return
+
+    @pytest.mark.parametrize("zone", ("test.com", "TEST.com", "test.COM", "TeSt.CoM"))
+    @pytest.mark.parametrize(
+        "name,matches",
+        (
+            ("test.com", True),
+            ("TEST.com", True),
+            ("test.COM", True),
+            ("TEST.COM", True),
+            ("TeSt.CoM", True),
+            ("foo.TEST.com", True),
+            ("BAR.FOO.test.COM", True),
+            ("CAR.bar.FOO.TEST.COM", True),
+            ("__dmarc.TeSt.CoM", True),
+            ("", False),
+            ("com", False),
+        ),
+    )
+    def test_case_insensitive(self, zone, name, matches):
+        rule = ZoneRule(zone, ["A"], DUMMY_FUNCTION, False)
+        run_rule(rule, Query("A", name), matches)
+        return
+
+    @pytest.mark.parametrize(
+        "name,matches",
+        (
+            ("test.com", True),
+            ("foo.test.com", True),
+            ("FOO.test.com", True),
+            ("bar.foo.test.com", True),
+            ("BAR.foo.test.com", True),
+            ("car.bar.foo.test.com", True),
+            ("TEST.com", False),
+            ("test.COM", False),
+            ("TEST.COM", False),
+            ("TeSt.CoM", False),
+            ("", False),
+            ("com", False),
+        ),
+    )
+    def test_case_sensitive(self, name, matches):
+        rule = ZoneRule("test.com", ["A"], DUMMY_FUNCTION, True)
+        run_rule(rule, Query("A", name), matches)
+        return
 
 
 ## RegexRule

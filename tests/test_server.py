@@ -3,7 +3,6 @@
 ### IMPORTS
 ### ============================================================================
 ## Standard Library
-import re
 from typing import List
 import unittest.mock
 
@@ -11,7 +10,7 @@ import unittest.mock
 import dnslib
 import pytest
 
-from nserver import NameServer, Query, Response, A, RegexRule, WildcardStringRule
+from nserver import NameServer, Query, Response, A
 
 ## Application
 
@@ -25,16 +24,6 @@ server = NameServer("tests")
 ## -----------------------------------------------------------------------------
 @server.rule("dummy.com", ["A"])
 def dummy_rule(query: Query) -> A:
-    return A(query.name, IP)
-
-
-@server.rule("wildcard-rule-expected.com", ["A"])
-def wildcard_rule_expected(query: Query) -> A:
-    return A(query.name, IP)
-
-
-@server.rule(re.compile(r"regex-rule-expected\.com"), ["A"])
-def regex_rule_expected(query: Query) -> A:
     return A(query.name, IP)
 
 
@@ -126,25 +115,6 @@ server._prepare_middleware_stacks()
 
 ### TESTS
 ### ============================================================================
-## NameServer.rule
-## -----------------------------------------------------------------------------
-def test_rule_decorator_type():
-    wildcard_tested = False
-    regex_tested = False
-
-    for rule in server.rules:
-        if rule.func is wildcard_rule_expected:
-            wildcard_tested = True
-            assert isinstance(rule, WildcardStringRule)
-        elif rule.func is regex_rule_expected:
-            regex_tested = True
-            assert isinstance(rule, RegexRule)
-
-    # Check all tests run
-    assert all([wildcard_tested, regex_tested])
-    return
-
-
 ## NameServer._process_dns_record
 ## -----------------------------------------------------------------------------
 def test_none_response():
