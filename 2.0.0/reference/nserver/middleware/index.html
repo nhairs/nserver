@@ -1,0 +1,2722 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://nhairs.github.io/nserver/latest/reference/nserver/middleware/">
+      
+      
+        <link rel="prev" href="../exceptions/">
+      
+      
+        <link rel="next" href="../models/">
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.7">
+    
+    
+      
+        <title>middleware - NServer: Python DNS Name Server Framework</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.4b4a2bd9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.356b1318.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#nserver.middleware" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="NServer: Python DNS Name Server Framework" class="md-header__button md-logo" aria-label="NServer: Python DNS Name Server Framework" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 19h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-7v2M4 3h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1m5 4h1V5H9v2m0 8h1v-2H9v2M5 5v2h2V5H5m0 8v2h2v-2H5Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NServer: Python DNS Name Server Framework
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> middleware
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/nhairs/nserver" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="NServer: Python DNS Name Server Framework" class="md-nav__button md-logo" aria-label="NServer: Python DNS Name Server Framework" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 19h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-7v2M4 3h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1m5 4h1V5H9v2m0 8h1v-2H9v2M5 5v2h2V5H5m0 8v2h2v-2H5Z"/></svg>
+
+    </a>
+    NServer: Python DNS Name Server Framework
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/nhairs/nserver" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../middleware/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Middleware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../error-handling/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Error Handling
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../blueprints/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Blueprints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../production-deployment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Production Deployment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../changelog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Change Log
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../external-resources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    External Resources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_1" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> nserver
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_1" id="__nav_9_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_9_1">
+            <span class="md-nav__icon md-icon"></span>
+            <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> nserver
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> exceptions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> middleware
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> middleware
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.AfterQueryHook" class="md-nav__link">
+    AfterQueryHook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.BeforeFirstQueryHook" class="md-nav__link">
+    BeforeFirstQueryHook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.BeforeQueryHook" class="md-nav__link">
+    BeforeQueryHook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandler" class="md-nav__link">
+    ExceptionHandler
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddlewareCallable" class="md-nav__link">
+    QueryMiddlewareCallable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandler" class="md-nav__link">
+    RawRecordExceptionHandler
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddlewareCallable" class="md-nav__link">
+    RawRecordMiddlewareCallable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware" class="md-nav__link">
+    ExceptionHandlerMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="ExceptionHandlerMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.default_exception_handler" class="md-nav__link">
+    default_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.get_exception_handler" class="md-nav__link">
+    get_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.process_query" class="md-nav__link">
+    process_query()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.HookMiddleware" class="md-nav__link">
+    HookMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="HookMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.HookMiddleware.process_query" class="md-nav__link">
+    process_query()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.HookMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddleware" class="md-nav__link">
+    QueryMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="QueryMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddleware.process_query" class="md-nav__link">
+    process_query()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddlewareProcessor" class="md-nav__link">
+    QueryMiddlewareProcessor
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware" class="md-nav__link">
+    RawRecordExceptionHandlerMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="RawRecordExceptionHandlerMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.default_exception_handler" class="md-nav__link">
+    default_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.get_exception_handler" class="md-nav__link">
+    get_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.process_record" class="md-nav__link">
+    process_record()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddleware" class="md-nav__link">
+    RawRecordMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="RawRecordMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddleware.process_record" class="md-nav__link">
+    process_record()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RuleProcessor" class="md-nav__link">
+    RuleProcessor
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.coerce_to_response" class="md-nav__link">
+    coerce_to_response()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> models
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../records/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> records
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> rules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../server/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> server
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> settings
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transport/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> transport
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../util/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> util
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.AfterQueryHook" class="md-nav__link">
+    AfterQueryHook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.BeforeFirstQueryHook" class="md-nav__link">
+    BeforeFirstQueryHook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.BeforeQueryHook" class="md-nav__link">
+    BeforeQueryHook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandler" class="md-nav__link">
+    ExceptionHandler
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddlewareCallable" class="md-nav__link">
+    QueryMiddlewareCallable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandler" class="md-nav__link">
+    RawRecordExceptionHandler
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddlewareCallable" class="md-nav__link">
+    RawRecordMiddlewareCallable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware" class="md-nav__link">
+    ExceptionHandlerMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="ExceptionHandlerMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.default_exception_handler" class="md-nav__link">
+    default_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.get_exception_handler" class="md-nav__link">
+    get_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.process_query" class="md-nav__link">
+    process_query()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.ExceptionHandlerMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.HookMiddleware" class="md-nav__link">
+    HookMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="HookMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.HookMiddleware.process_query" class="md-nav__link">
+    process_query()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.HookMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddleware" class="md-nav__link">
+    QueryMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="QueryMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddleware.process_query" class="md-nav__link">
+    process_query()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.QueryMiddlewareProcessor" class="md-nav__link">
+    QueryMiddlewareProcessor
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware" class="md-nav__link">
+    RawRecordExceptionHandlerMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="RawRecordExceptionHandlerMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.default_exception_handler" class="md-nav__link">
+    default_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.get_exception_handler" class="md-nav__link">
+    get_exception_handler()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.process_record" class="md-nav__link">
+    process_record()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddleware" class="md-nav__link">
+    RawRecordMiddleware
+  </a>
+  
+    <nav class="md-nav" aria-label="RawRecordMiddleware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddleware.process_record" class="md-nav__link">
+    process_record()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.middleware.RawRecordMiddleware.register_next_function" class="md-nav__link">
+    register_next_function()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.RuleProcessor" class="md-nav__link">
+    RuleProcessor
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nserver.middleware.coerce_to_response" class="md-nav__link">
+    coerce_to_response()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<div class="doc doc-object doc-module">
+
+
+
+
+<h1 id="nserver.middleware" class="doc doc-heading">
+          <span class="doc doc-object-name doc-module-name">nserver.middleware</span>
+
+
+<a href="#nserver.middleware" class="headerlink" title="Permanent link">🔗</a></h1>
+
+  <div class="doc doc-contents first">
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="nserver.middleware.AfterQueryHook" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">AfterQueryHook</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#nserver.middleware.AfterQueryHook" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">AfterQueryHook</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Response</span><span class="p">],</span> <span class="n">Response</span><span class="p">]</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Type alias for <code>HookMiddleware.after_query</code> functions.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="nserver.middleware.BeforeFirstQueryHook" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">BeforeFirstQueryHook</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#nserver.middleware.BeforeFirstQueryHook" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">BeforeFirstQueryHook</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Type alias for <code>HookMiddleware.before_first_query</code> functions.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="nserver.middleware.BeforeQueryHook" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">BeforeQueryHook</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#nserver.middleware.BeforeQueryHook" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">BeforeQueryHook</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Query</span><span class="p">],</span> <span class="n">RuleResult</span><span class="p">]</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Type alias for <code>HookMiddleware.before_query</code> functions.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="nserver.middleware.ExceptionHandler" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">ExceptionHandler</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#nserver.middleware.ExceptionHandler" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ExceptionHandler</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Query</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">],</span> <span class="n">Response</span><span class="p">]</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Type alias for <code>ExceptionHandlerMiddleware</code> exception handler functions</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="nserver.middleware.QueryMiddlewareCallable" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">QueryMiddlewareCallable</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#nserver.middleware.QueryMiddlewareCallable" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">QueryMiddlewareCallable</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Query</span><span class="p">],</span> <span class="n">Response</span><span class="p">]</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Type alias for functions that can be used with <code>QueryMiddleware.next_function</code></p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="nserver.middleware.RawRecordExceptionHandler" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">RawRecordExceptionHandler</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#nserver.middleware.RawRecordExceptionHandler" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RawRecordExceptionHandler</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="p">[</span><span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">],</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">]</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Type alias for <code>RawRecordExceptionHandlerMiddleware</code> exception handler functions</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+
+<h2 id="nserver.middleware.RawRecordMiddlewareCallable" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">RawRecordMiddlewareCallable</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#nserver.middleware.RawRecordMiddlewareCallable" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RawRecordMiddlewareCallable</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="p">[</span><span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span><span class="p">],</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">]</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Type alias for functions that can be used with <code>RawRecordMiddleware.next_function</code></p>
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="nserver.middleware.ExceptionHandlerMiddleware" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">ExceptionHandlerMiddleware</span>
+
+
+<a href="#nserver.middleware.ExceptionHandlerMiddleware" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ExceptionHandlerMiddleware</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">exception_handlers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="n">Dict</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="ne">Exception</span><span class="p">],</span> <span class="n">ExceptionHandler</span><span class="p">]</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="nserver.middleware.QueryMiddleware" href="#nserver.middleware.QueryMiddleware">QueryMiddleware</a></code></p>
+
+  
+      <p>Middleware for handling exceptions originating from a <code>QueryMiddleware</code> stack.</p>
+<p>Allows registering handlers for individual <code>Exception</code> types. Only one handler can
+exist for a given <code>Exception</code> type.</p>
+<p>When an exception is encountered, the middleware will search for the first handler that
+matches the class or parent class of the exception in method resolution order. If no handler
+is registered will use this classes <code>self.default_exception_handler</code>.</p>
+<p>New in <code>2.0</code>.</p>
+
+
+
+  <p><strong>Attributes:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exception_handlers</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>registered exception handlers</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+  
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exception_handlers</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="typing.Dict">Dict</span>[<span title="typing.Type">Type</span>[Exception], <a class="autorefs autorefs-internal" title="nserver.middleware.ExceptionHandler" href="#nserver.middleware.ExceptionHandler">ExceptionHandler</a>]]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>exception handlers to assign</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.ExceptionHandlerMiddleware.default_exception_handler" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">default_exception_handler</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#nserver.middleware.ExceptionHandlerMiddleware.default_exception_handler" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">default_exception_handler</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">query</span><span class="p">:</span> <span class="n">Query</span><span class="p">,</span> <span class="n">exception</span><span class="p">:</span> <span class="ne">Exception</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>The default exception handler</p>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.ExceptionHandlerMiddleware.get_exception_handler" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">get_exception_handler</span>
+
+
+<a href="#nserver.middleware.ExceptionHandlerMiddleware.get_exception_handler" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">get_exception_handler</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">exception</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExceptionHandler</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the exception handler for an <code>Exception</code>.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exception</code></td>
+          <td>
+                <code>Exception</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the exception we wish to handle</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.ExceptionHandlerMiddleware.process_query" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">process_query</span>
+
+
+<a href="#nserver.middleware.ExceptionHandlerMiddleware.process_query" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_query</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">query</span><span class="p">:</span> <span class="n">Query</span><span class="p">,</span> <span class="n">call_next</span><span class="p">:</span> <span class="n">QueryMiddlewareCallable</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Call the next function catching any handling any errors</p>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.ExceptionHandlerMiddleware.register_next_function" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">register_next_function</span>
+
+
+<a href="#nserver.middleware.ExceptionHandlerMiddleware.register_next_function" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">register_next_function</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">next_function</span><span class="p">:</span> <span class="n">QueryMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the <code>next_function</code> of this middleware</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="nserver.middleware.HookMiddleware" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">HookMiddleware</span>
+
+
+<a href="#nserver.middleware.HookMiddleware" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">HookMiddleware</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">before_first_query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="n">List</span><span class="p">[</span><span class="n">BeforeFirstQueryHook</span><span class="p">]</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">before_query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">BeforeQueryHook</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">after_query</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">AfterQueryHook</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="nserver.middleware.QueryMiddleware" href="#nserver.middleware.QueryMiddleware">QueryMiddleware</a></code></p>
+
+  
+      <p>Middleware for processing hook functions</p>
+<p>There are three types of hooks:</p>
+<p><code>before_first_query</code> hooks will be run once at the time that the first query
+is received. They take no arguments and return no results. These are guaranteed
+to run at most once - however if any hook fails it will cause no other hooks to
+be run. Subsequent queries will continue to be processed regardless of if all
+<code>before_first_query</code> hooks ran or not.</p>
+<p><code>before_query</code> hooks will be run before each request. They receive a <code>Query</code>
+as an argument. If a hooks returns a non <code>None</code> result, process will skip to
+result processing.</p>
+<p><code>after_query</code> hooks will be run after a result has been returned from a <code>before_query</code>
+hook or from the next function in the middleware chain. They take a <code>Response</code> input
+and must return a <code>Response</code>.</p>
+<p>New in <code>2.0</code>.</p>
+
+
+
+  <p><strong>Attributes:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>before_first_query</code></td>
+          <td>
+                <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="nserver.middleware.BeforeFirstQueryHook" href="#nserver.middleware.BeforeFirstQueryHook">BeforeFirstQueryHook</a>]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p><code>before_first_query</code> hooks</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>before_query</code></td>
+          <td>
+                <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="nserver.middleware.BeforeQueryHook" href="#nserver.middleware.BeforeQueryHook">BeforeQueryHook</a>]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p><code>before_query</code> hooks</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>after_query</code></td>
+          <td>
+                <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="nserver.middleware.AfterQueryHook" href="#nserver.middleware.AfterQueryHook">AfterQueryHook</a>]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p><code>after_query</code> hooks</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>before_first_query_run</code></td>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>have we run the <code>before_first_query</code> hooks</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>before_first_query_failed</code></td>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>did any <code>before_first_query</code> hooks fail</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+  
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>before_first_query</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="nserver.middleware.BeforeFirstQueryHook" href="#nserver.middleware.BeforeFirstQueryHook">BeforeFirstQueryHook</a>]]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>initial <code>before_first_query</code> hooks to register</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>before_query</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="nserver.middleware.BeforeQueryHook" href="#nserver.middleware.BeforeQueryHook">BeforeQueryHook</a>]]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>initial <code>before_query</code> hooks to register</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>after_query</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="nserver.middleware.AfterQueryHook" href="#nserver.middleware.AfterQueryHook">AfterQueryHook</a>]]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>initial <code>after_query</code> hooks to register</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.HookMiddleware.process_query" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">process_query</span>
+
+
+<a href="#nserver.middleware.HookMiddleware.process_query" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_query</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">query</span><span class="p">:</span> <span class="n">Query</span><span class="p">,</span> <span class="n">call_next</span><span class="p">:</span> <span class="n">QueryMiddlewareCallable</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Process a query running relevant hooks.</p>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.HookMiddleware.register_next_function" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">register_next_function</span>
+
+
+<a href="#nserver.middleware.HookMiddleware.register_next_function" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">register_next_function</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">next_function</span><span class="p">:</span> <span class="n">QueryMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the <code>next_function</code> of this middleware</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="nserver.middleware.QueryMiddleware" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">QueryMiddleware</span>
+
+
+<a href="#nserver.middleware.QueryMiddleware" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">QueryMiddleware</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+
+  
+      <p>Middleware for interacting with <code>Query</code> objects</p>
+<p>New in <code>2.0</code>.</p>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.QueryMiddleware.process_query" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">process_query</span>
+
+
+<a href="#nserver.middleware.QueryMiddleware.process_query" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_query</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">query</span><span class="p">:</span> <span class="n">Query</span><span class="p">,</span> <span class="n">call_next</span><span class="p">:</span> <span class="n">QueryMiddlewareCallable</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Handle an incoming query.</p>
+<p>Child classes should override this function (if they do not this middleware will
+simply pass the query onto the next function).</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>query</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="nserver.models.Query" href="../models/#nserver.models.Query">Query</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the incoming query</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>call_next</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="nserver.middleware.QueryMiddlewareCallable" href="#nserver.middleware.QueryMiddlewareCallable">QueryMiddlewareCallable</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the next function in the chain</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.QueryMiddleware.register_next_function" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">register_next_function</span>
+
+
+<a href="#nserver.middleware.QueryMiddleware.register_next_function" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">register_next_function</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">next_function</span><span class="p">:</span> <span class="n">QueryMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the <code>next_function</code> of this middleware</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="nserver.middleware.QueryMiddlewareProcessor" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">QueryMiddlewareProcessor</span>
+
+
+<a href="#nserver.middleware.QueryMiddlewareProcessor" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">QueryMiddlewareProcessor</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">query_middleware</span><span class="p">:</span> <span class="n">QueryMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+
+  
+      <p>Convert an incoming DNS record and pass it to a <code>QueryMiddleware</code> stack.</p>
+<p>This class serves as the bottom of the <code>RawRcordMiddleware</code> stack.</p>
+<p>New in <code>2.0</code>.</p>
+  
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>query_middleware</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="nserver.middleware.QueryMiddlewareCallable" href="#nserver.middleware.QueryMiddlewareCallable">QueryMiddlewareCallable</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the top of the middleware stack</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="nserver.middleware.RawRecordExceptionHandlerMiddleware" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">RawRecordExceptionHandlerMiddleware</span>
+
+
+<a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RawRecordExceptionHandlerMiddleware</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">exception_handlers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="n">Dict</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="ne">Exception</span><span class="p">],</span> <span class="n">RawRecordExceptionHandler</span><span class="p">]</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="nserver.middleware.RawRecordMiddleware" href="#nserver.middleware.RawRecordMiddleware">RawRecordMiddleware</a></code></p>
+
+  
+      <p>Middleware for handling exceptions originating from a <code>RawRecordMiddleware</code> stack.</p>
+<p>Allows registering handlers for individual <code>Exception</code> types. Only one handler can
+exist for a given <code>Exception</code> type.</p>
+<p>When an exception is encountered, the middleware will search for the first handler that
+matches the class or parent class of the exception in method resolution order. If no handler
+is registered will use this classes <code>self.default_exception_handler</code>.</p>
+
+<details class="danger" open>
+  <summary>Important</summary>
+  <p>Exception handlers are expected to be robust - that is, they must always
+return correctly even if they internally encounter an <code>Exception</code>.</p>
+</details>      <p>New in <code>2.0</code>.</p>
+
+
+
+  <p><strong>Attributes:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exception_handlers</code></td>
+          <td>
+                <code><span title="typing.Dict">Dict</span>[<span title="typing.Type">Type</span>[Exception], <a class="autorefs autorefs-internal" title="nserver.middleware.RawRecordExceptionHandler" href="#nserver.middleware.RawRecordExceptionHandler">RawRecordExceptionHandler</a>]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>registered exception handlers</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.RawRecordExceptionHandlerMiddleware.default_exception_handler" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">default_exception_handler</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.default_exception_handler" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">default_exception_handler</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">record</span><span class="p">:</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span><span class="p">,</span> <span class="n">exception</span><span class="p">:</span> <span class="ne">Exception</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Default exception handler</p>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.RawRecordExceptionHandlerMiddleware.get_exception_handler" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">get_exception_handler</span>
+
+
+<a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.get_exception_handler" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">get_exception_handler</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">exception</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RawRecordExceptionHandler</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the exception handler for the given exception</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>exception</code></td>
+          <td>
+                <code>Exception</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the exception we wish to handle</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.RawRecordExceptionHandlerMiddleware.process_record" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">process_record</span>
+
+
+<a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.process_record" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_record</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">record</span><span class="p">:</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">call_next</span><span class="p">:</span> <span class="n">RawRecordMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Call the next function handling any exceptions that arise</p>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.RawRecordExceptionHandlerMiddleware.register_next_function" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">register_next_function</span>
+
+
+<a href="#nserver.middleware.RawRecordExceptionHandlerMiddleware.register_next_function" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">register_next_function</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">next_function</span><span class="p">:</span> <span class="n">RawRecordMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the <code>next_function</code> of this middleware</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="nserver.middleware.RawRecordMiddleware" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">RawRecordMiddleware</span>
+
+
+<a href="#nserver.middleware.RawRecordMiddleware" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RawRecordMiddleware</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+
+  
+      <p>Middleware to be run against raw <code>dnslib.DNSRecord</code>s.</p>
+<p>New in <code>2.0</code>.</p>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.RawRecordMiddleware.process_record" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">process_record</span>
+
+
+<a href="#nserver.middleware.RawRecordMiddleware.process_record" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">process_record</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">record</span><span class="p">:</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">call_next</span><span class="p">:</span> <span class="n">RawRecordMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dnslib</span><span class="o">.</span><span class="n">DNSRecord</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Handle an incoming record.</p>
+<p>Child classes should override this function (if they do not this middleware will
+simply pass the record onto the next function).</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>record</code></td>
+          <td>
+                <code><span title="dnslib.DNSRecord">DNSRecord</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the incoming record</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>call_next</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="nserver.middleware.RawRecordMiddlewareCallable" href="#nserver.middleware.RawRecordMiddlewareCallable">RawRecordMiddlewareCallable</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the next function in the chain</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h3 id="nserver.middleware.RawRecordMiddleware.register_next_function" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">register_next_function</span>
+
+
+<a href="#nserver.middleware.RawRecordMiddleware.register_next_function" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">register_next_function</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">next_function</span><span class="p">:</span> <span class="n">RawRecordMiddlewareCallable</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Set the <code>next_function</code> of this middleware</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="nserver.middleware.RuleProcessor" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">RuleProcessor</span>
+
+
+<a href="#nserver.middleware.RuleProcessor" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RuleProcessor</span><span class="p">(</span><span class="n">rules</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">RuleBase</span><span class="p">])</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+
+  
+      <p>Find and run a matching rule function.</p>
+<p>This class serves as the bottom of the <code>QueryMiddleware</code> stack.</p>
+<p>New in <code>2.0</code>.</p>
+  
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>rules</code></td>
+          <td>
+                <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="nserver.rules.RuleBase" href="../rules/#nserver.rules.RuleBase">RuleBase</a>]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>rules to run against</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+
+<h2 id="nserver.middleware.coerce_to_response" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">coerce_to_response</span>
+
+
+<a href="#nserver.middleware.coerce_to_response" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">coerce_to_response</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">RuleResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Convert some <code>RuleResult</code> to a <code>Response</code></p>
+<p>New in <code>2.0</code>.</p>
+
+
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>result</code></td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="nserver.rules.RuleResult" href="../rules/#nserver.rules.RuleResult">RuleResult</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>the results to convert</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  <p><strong>Raises:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>TypeError</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>unsupported result type</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Nicholas Hairs</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/nhairs/nserver" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.instant", "navigation.sections", "navigation.indexes", "navigation.expand", "navigation.top", "content.code.annotate", "content.code.copy", "toc.follow"], "search": "../../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.aecac24b.min.js"></script>
+      
+    
+  </body>
+</html>
