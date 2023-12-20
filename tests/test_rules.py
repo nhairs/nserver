@@ -38,7 +38,7 @@ def run_rule(rule, query, matches):
 ### ============================================================================
 @pytest.mark.parametrize(
     "rule,expected",
-    (
+    [
         ("*", True),
         ("**", True),
         ("{base_domain}", True),
@@ -47,7 +47,7 @@ def run_rule(rule, query, matches):
         ("", False),
         ("foo.com", False),
         ("{something}", False),
-    ),
+    ],
 )
 def test_wildcard_string_regex(rule, expected):
     assert bool(_wildcard_string_regex.search(rule)) is expected
@@ -55,7 +55,7 @@ def test_wildcard_string_regex(rule, expected):
 
 @pytest.mark.parametrize(
     "rule,expected",
-    (
+    [
         ("", StaticRule),
         ("foo", StaticRule),
         ("example.com", StaticRule),
@@ -69,7 +69,7 @@ def test_wildcard_string_regex(rule, expected):
         ("*.{base_domain}", WildcardStringRule),
         ("*.{base_domain}", WildcardStringRule),
         (re.compile(".*"), RegexRule),
-    ),
+    ],
 )
 def test_smart_make_rule_class(rule, expected):
     assert isinstance(smart_make_rule(rule, ["A"], func=DUMMY_FUNCTION), expected)
@@ -80,11 +80,11 @@ def test_smart_make_rule_class(rule, expected):
 class TestStaticRule:
     @pytest.mark.parametrize(
         "qtype,matches",
-        (
+        [
             ("A", True),
             ("AAAA", True),
             ("TXT", False),
-        ),
+        ],
     )
     def test_qtypes(self, qtype, matches):
         rule = StaticRule("", ["A", "AAAA"], DUMMY_FUNCTION)
@@ -94,7 +94,7 @@ class TestStaticRule:
     @pytest.mark.parametrize("match_string", ("test.com", "TEST.com", "test.COM", "TeSt.CoM"))
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("test.com", True),
             ("TEST.com", True),
             ("test.COM", True),
@@ -103,7 +103,7 @@ class TestStaticRule:
             ("", False),
             ("com", False),
             ("foo.test.com", False),
-        ),
+        ],
     )
     def test_case_insensitive(self, match_string, name, matches):
         rule = StaticRule(match_string, ["A"], DUMMY_FUNCTION, False)
@@ -112,7 +112,7 @@ class TestStaticRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("test.com", True),
             ("TEST.com", False),
             ("test.COM", False),
@@ -121,7 +121,7 @@ class TestStaticRule:
             ("", False),
             ("com", False),
             ("foo.test.com", False),
-        ),
+        ],
     )
     def test_case_sensitive(self, name, matches):
         rule = StaticRule("test.com", ["A"], DUMMY_FUNCTION, True)
@@ -134,11 +134,11 @@ class TestStaticRule:
 class TestZoneRule:
     @pytest.mark.parametrize(
         "qtype,matches",
-        (
+        [
             ("A", True),
             ("AAAA", True),
             ("TXT", False),
-        ),
+        ],
     )
     def test_qtypes(self, qtype, matches):
         rule = ZoneRule("", ["A", "AAAA"], DUMMY_FUNCTION)
@@ -148,7 +148,7 @@ class TestZoneRule:
     @pytest.mark.parametrize("zone", ("test.com", "TEST.com", "test.COM", "TeSt.CoM"))
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("test.com", True),
             ("TEST.com", True),
             ("test.COM", True),
@@ -160,7 +160,7 @@ class TestZoneRule:
             ("__dmarc.TeSt.CoM", True),
             ("", False),
             ("com", False),
-        ),
+        ],
     )
     def test_case_insensitive(self, zone, name, matches):
         rule = ZoneRule(zone, ["A"], DUMMY_FUNCTION, False)
@@ -169,7 +169,7 @@ class TestZoneRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("test.com", True),
             ("foo.test.com", True),
             ("FOO.test.com", True),
@@ -182,7 +182,7 @@ class TestZoneRule:
             ("TeSt.CoM", False),
             ("", False),
             ("com", False),
-        ),
+        ],
     )
     def test_case_sensitive(self, name, matches):
         rule = ZoneRule("test.com", ["A"], DUMMY_FUNCTION, True)
@@ -195,11 +195,11 @@ class TestZoneRule:
 class TestRegexRule:
     @pytest.mark.parametrize(
         "qtype,matches",
-        (
+        [
             ("A", True),
             ("AAAA", True),
             ("TXT", False),
-        ),
+        ],
     )
     def test_qtypes(self, qtype, matches):
         rule = RegexRule(re.compile(".*"), ["A", "AAAA"], DUMMY_FUNCTION)
@@ -208,7 +208,7 @@ class TestRegexRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.test.com", True),
             ("cats.test.com", True),
             ("cat.kitten.test.com", True),
@@ -217,7 +217,7 @@ class TestRegexRule:
             ("cat.test.coms", False),
             ("dog.test.com", False),
             ("dog.cat.test.com", False),
-        ),
+        ],
     )
     def test_case_insensitive_same_case(self, name, matches):
         rule = RegexRule(re.compile(r"cat.*\.test\.com"), ["A"], DUMMY_FUNCTION, False)
@@ -226,12 +226,12 @@ class TestRegexRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("Cat.TEST.com", True),
             ("Cats.TEST.com", True),
             ("Cat.kitten.TEST.com", True),
             ("Cats.kittens.TEST.com", True),
-        ),
+        ],
     )
     def test_case_insensitive_query_mixed(self, name, matches):
         rule = RegexRule(re.compile(r"cat.*\.test\.com"), ["A"], DUMMY_FUNCTION, False)
@@ -240,7 +240,7 @@ class TestRegexRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.test.com", True),
             ("cats.test.com", True),
             ("cat.kitten.test.com", True),
@@ -253,7 +253,7 @@ class TestRegexRule:
             ("cat.test.coms", False),
             ("dog.test.com", False),
             ("dog.cat.test.com", False),
-        ),
+        ],
     )
     def test_case_insensitive_regex_mixed(self, name, matches):
         rule = RegexRule(re.compile(r"Cat.*\.TEST\.com"), ["A"], DUMMY_FUNCTION, False)
@@ -262,7 +262,7 @@ class TestRegexRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.test.com", False),
             ("cats.test.com", False),
             ("cat.kitten.test.com", False),
@@ -275,7 +275,7 @@ class TestRegexRule:
             ("cat.test.coms", False),
             ("dog.test.com", False),
             ("dog.cat.test.com", False),
-        ),
+        ],
     )
     def test_case_sensitive(self, name, matches):
         rule = RegexRule(re.compile(r"Cat.*\.TEST\.com"), ["A"], DUMMY_FUNCTION, True)
@@ -288,11 +288,11 @@ class TestRegexRule:
 class TestWildcardStringRule:
     @pytest.mark.parametrize(
         "qtype,matches",
-        (
+        [
             ("A", True),
             ("AAAA", True),
             ("TXT", False),
-        ),
+        ],
     )
     def test_qtypes(self, qtype, matches):
         rule = WildcardStringRule("**", ["A", "AAAA"], DUMMY_FUNCTION)
@@ -301,14 +301,14 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.test.com", True),
             ("kitten.test.com", True),
             ("test.com", False),
             ("cat.fail.com", False),
             ("cat.test.fail", False),
             ("fail.cat.test.com", False),
-        ),
+        ],
     )
     def test_single_wildcard_expansion(self, name, matches):
         rule = WildcardStringRule("*.test.com", ["A"], DUMMY_FUNCTION, False)
@@ -317,13 +317,13 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.kitten.test.com", True),
             ("lion.cat.kitten.test.com", True),
             ("test.com", False),
             ("cat.fail.com", False),
             ("cat.test.fail", False),
-        ),
+        ],
     )
     def test_double_wildcard_expansion(self, name, matches):
         rule = WildcardStringRule("**.test.com", ["A"], DUMMY_FUNCTION, False)
@@ -332,7 +332,7 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.1.dog.1.test.com", True),
             ("cat.1.2.dog.1.test.com", True),
             ("cat.1.2.3.dog.1.test.com", True),
@@ -340,7 +340,7 @@ class TestWildcardStringRule:
             ("cat.dog.1.test.com", False),
             ("cat.1.2.dog.1.2.test.com", False),
             ("1.cat.3.dog.1.test.com", False),
-        ),
+        ],
     )
     def test_multi_wildcard_expansion(self, name, matches):
         rule = WildcardStringRule("cat.**.dog.*.test.com", ["A"], DUMMY_FUNCTION, False)
@@ -349,7 +349,7 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("internal", True),
             ("local", True),
             ("asdfasdfasdf", True),
@@ -359,7 +359,7 @@ class TestWildcardStringRule:
             ("psl.au", True),
             ("nope.test.com", False),
             ("nope.foo.com.au", False),
-        ),
+        ],
     )
     def test_base_domain_case_insensitive(self, name, matches):
         rule = WildcardStringRule("{base_domain}", ["A"], DUMMY_FUNCTION, False)
@@ -368,7 +368,7 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("internal", True),
             ("local", True),
             ("asdfasdfasdf", True),
@@ -388,7 +388,7 @@ class TestWildcardStringRule:
             ("NOPE.test.com", False),
             ("nope.TEST.com", False),
             ("nope.test.COM", False),
-        ),
+        ],
     )
     def test_base_domain_case_sensitive(self, name, matches):
         rule = WildcardStringRule("{base_domain}", ["A"], DUMMY_FUNCTION, True)
@@ -397,7 +397,7 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             # local domain
             ("cat.1.dog.1.internal", True),
             ("cat.1.2.dog.1.internal", True),
@@ -422,7 +422,7 @@ class TestWildcardStringRule:
             ("cat.dog.1.etld.com.au", False),
             ("cat.1.2.dog.1.2.etld.com.au", False),
             ("1.cat.3.dog.1.etld.com.au", False),
-        ),
+        ],
     )
     def test_base_domain_multi_wildcard_expansion(self, name, matches):
         rule = WildcardStringRule("cat.**.dog.*.{base_domain}", ["A"], DUMMY_FUNCTION, False)
@@ -431,14 +431,14 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.kitten.test.com", True),
             ("cats.dogs.test.com", False),
             ("cat.com", False),
             ("cat.test.coms", False),
             ("dog.test.com", False),
             ("dog.cat.test.com", False),
-        ),
+        ],
     )
     def test_case_insensitive_same_case(self, name, matches):
         rule = WildcardStringRule("cat.**.test.com", ["A"], DUMMY_FUNCTION, False)
@@ -447,7 +447,7 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.kitten.test.com", True),
             ("cat.lion.kitten.test.com", True),
             ("cats.dogs.test.com", False),
@@ -465,7 +465,7 @@ class TestWildcardStringRule:
             ("Cat.TEST.coms", False),
             ("dog.TEST.com", False),
             ("dog.Cat.TEST.com", False),
-        ),
+        ],
     )
     def test_case_insensitive_query_mixed(self, name, matches):
         rule = WildcardStringRule("cat.**.test.com", ["A"], DUMMY_FUNCTION, False)
@@ -474,7 +474,7 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.kitten.test.com", True),
             ("cat.lion.kitten.test.com", True),
             ("cats.dogs.test.com", False),
@@ -492,7 +492,7 @@ class TestWildcardStringRule:
             ("Cat.TEST.coms", False),
             ("dog.TEST.com", False),
             ("dog.Cat.TEST.com", False),
-        ),
+        ],
     )
     def test_case_insensitive_expansion_mixed(self, name, matches):
         rule = WildcardStringRule("Cat.**.TEST.com", ["A"], DUMMY_FUNCTION, False)
@@ -501,7 +501,7 @@ class TestWildcardStringRule:
 
     @pytest.mark.parametrize(
         "name,matches",
-        (
+        [
             ("cat.kitten.test.com", False),
             ("cat.lion.kitten.test.com", False),
             ("cats.dogs.test.com", False),
@@ -519,7 +519,7 @@ class TestWildcardStringRule:
             ("Cat.TEST.coms", False),
             ("dog.TEST.com", False),
             ("dog.Cat.TEST.com", False),
-        ),
+        ],
     )
     def test_case_sensitive(self, name, matches):
         rule = WildcardStringRule("Cat.**.TEST.com", ["A"], DUMMY_FUNCTION, True)

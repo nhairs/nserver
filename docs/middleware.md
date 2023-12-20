@@ -2,7 +2,7 @@
 
 Middleware can be used to modify the behaviour of a server seperate to the individual rules that are registered to the server. Middleware is run on all requests and can modify both the input and response of a request.
 
-Middleware requires `nserver>=1.1.0`
+Middleware requires `nserver>=2.0`
 
 ## Middleware Stacks
 

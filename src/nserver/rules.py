@@ -19,7 +19,7 @@ from .records import RecordBase
 ALL_QTYPES: List[str] = list(dnslib.QTYPE.reverse.keys())
 """All supported Query Types
 
-New in `1.1.0`.
+New in `2.0`.
 """
 
 _wildcard_string_regex = re.compile(r"[*]|\{base_domain\}")
@@ -39,7 +39,7 @@ def smart_make_rule(rule: "Union[Type[RuleBase], str, Pattern]", *args, **kwargs
       it will be a `WildcardStringRule`, else a `StaticRule`.
     - `Pattern` then a `RegexRule`.
 
-    New in `1.1.0`
+    New in `2.0`
 
     Args:
         rule: input to process
@@ -57,7 +57,7 @@ def smart_make_rule(rule: "Union[Type[RuleBase], str, Pattern]", *args, **kwargs
         # vary between versions of python and other bugs.
         # see also: https://stackoverflow.com/questions/6102019/type-of-compiled-regex-object-in-python
         return RegexRule(rule, *args, **kwargs)
-    raise ValueError(f"Could not handle rule: {rule!r}")
+    return rule(*args, **kwargs)
 
 
 ### CLASSES
@@ -93,7 +93,7 @@ class StaticRule(RuleBase):
 
     `StaticRule` is more efficient than using a `WildcardStringRule` for static strings.
 
-    New in `1.1.0`.
+    New in `2.0`.
     """
 
     def __init__(
@@ -141,7 +141,7 @@ class ZoneRule(RuleBase):
 
     An empty zone (`""`) will match any domain as this refers to the domain root (`.`).
 
-    New in `1.1.0`.
+    New in `2.0`.
     """
 
     def __init__(

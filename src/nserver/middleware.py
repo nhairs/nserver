@@ -46,7 +46,7 @@ RawRecordExceptionHandler = Callable[[dnslib.DNSRecord, Exception], dnslib.DNSRe
 def coerce_to_response(result: RuleResult) -> Response:
     """Convert some `RuleResult` to a `Response`
 
-    New in `1.1.0`.
+    New in `2.0`.
 
     Args:
         result: the results to convert
@@ -76,7 +76,7 @@ def coerce_to_response(result: RuleResult) -> Response:
 class QueryMiddleware:
     """Middleware for interacting with `Query` objects
 
-    New in `1.1.0`.
+    New in `2.0`.
     """
 
     def __init__(self) -> None:
@@ -118,7 +118,7 @@ class ExceptionHandlerMiddleware(QueryMiddleware):
     matches the class or parent class of the exception in method resolution order. If no handler
     is registered will use this classes `self.default_exception_handler`.
 
-    New in `1.1.0`.
+    New in `2.0`.
 
     Attributes:
         exception_handlers: registered exception handlers
@@ -182,7 +182,7 @@ class HookMiddleware(QueryMiddleware):
     hook or from the next function in the middleware chain. They take a `Response` input
     and must return a `Response`.
 
-    New in `1.1.0`.
+    New in `2.0`.
 
     Attributes:
         before_first_query: `before_first_query` hooks
@@ -257,7 +257,7 @@ class RuleProcessor:
 
     This class serves as the bottom of the `QueryMiddleware` stack.
 
-    New in `1.1.0`.
+    New in `2.0`.
     """
 
     def __init__(self, rules: List[RuleBase]) -> None:
@@ -284,7 +284,7 @@ class RuleProcessor:
 class RawRecordMiddleware:
     """Middleware to be run against raw `dnslib.DNSRecord`s.
 
-    New in `1.1.0`.
+    New in `2.0`.
     """
 
     def __init__(self) -> None:
@@ -332,7 +332,7 @@ class RawRecordExceptionHandlerMiddleware(RawRecordMiddleware):
         Exception handlers are expected to be robust - that is, they must always
         return correctly even if they internally encounter an `Exception`.
 
-    New in `1.1.0`.
+    New in `2.0`.
 
     Attributes:
         exception_handlers: registered exception handlers
@@ -389,7 +389,7 @@ class QueryMiddlewareProcessor:
 
     This class serves as the bottom of the `RawRcordMiddleware` stack.
 
-    New in `1.1.0`.
+    New in `2.0`.
     """
 
     def __init__(self, query_middleware: QueryMiddlewareCallable) -> None:
