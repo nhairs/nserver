@@ -2,7 +2,8 @@
 
 Custom exception handling is handled through the [`ExceptionHandlerMiddleware`][nserver.middleware.ExceptionHandlerMiddleware] and [`RawRecordExceptionHandlerMiddleware`][nserver.middleware.RawRecordExceptionHandlerMiddleware] [Middleware][middleware]. These middleware will catch any `Exception`s raised by their respective middleware stacks.
 
-Error handling requires `nserver>=2.0`
+!!! note
+    Error handling requires `nserver>=2.0`
 
 In general you are probably able to use the `ExceptionHandlerMiddleware` as the `RawRecordExceptionHandlerMiddleware` is only needed to catch exceptions resulting from `RawRecordMiddleware` or broken exception handlers in the `ExceptionHandlerMiddleware`. If you only write `QueryMiddleware` and your `ExceptionHandlerMiddleware` handlers never raise exceptions then you'll be good to go with just the `ExceptionHandlerMiddleware`.
 
@@ -14,6 +15,8 @@ Handlers are chosen by finding a handler for the most specific parent class of t
     These handlers only handle exceptions that are subclasses of (and including) `Exception`. Exceptions that are only children of `BaseException` (e.g. `SystemExit`) will not be caught by these handlers.
 
 ## Registering Exception Handlers
+
+Exception handlers can be registered to `NameServer` and `SubServer` instances using either their `@[raw_]exception_handler` decorators or their `register_[raw_]exception_handler` methods.
 
 ```python
 import dnslib
