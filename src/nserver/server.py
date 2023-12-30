@@ -29,27 +29,114 @@ TRANSPORT_MAP: Dict[str, Type[TransportBase]] = {
 
 ### Classes
 ### ============================================================================
-class Scaffold:
-    """Base class for shared functionality between `NameServer` and `Blueprint`
+class _LoggingMixin:  # pylint: disable=too-few-public-methods
+    """Self bound logging methods"""
+
+    _logger: logging.Logger
+
+    def _vvdebug(self, *args, **kwargs):
+        """Log very verbose debug message."""
+
+        return self._logger.log(6, *args, **kwargs)
+
+    def _vdebug(self, *args, **kwargs):
+        """Log verbose debug message."""
+
+        return self._logger.log(8, *args, **kwargs)
+
+    def _debug(self, *args, **kwargs):
+        """Log debug message."""
+
+        return self._logger.debug(*args, **kwargs)
+
+    def _info(self, *args, **kwargs):
+        """Log very verbose debug message."""
+
+        return self._logger.info(*args, **kwargs)
+
+    def _warning(self, *args, **kwargs):
+        """Log warning message."""
+
+        return self._logger.warning(*args, **kwargs)
+
+    def _error(self, *args, **kwargs):
+        """Log an error message."""
+
+        return self._logger.error(*args, **kwargs)
+
+    def _critical(self, *args, **kwargs):
+        """Log a critical message."""
+
+        return self._logger.critical(*args, **kwargs)
+
+
+class RulesContainer(_LoggingMixin):
+    """Base class for rules based functionality`
 
     New in `2.0`.
 
     Attributes:
         rules: registered rules
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.rules: List[RuleBase] = []
+        return
+
+    def register_rule(self, rule: RuleBase) -> None:
+        """Register the given rule
+
+        Args:
+            rule: the rule to register
+        """
+        self._debug(f"Registered rule: {rule!r}")
+        self.rules.append(rule)
+        return
+
+    def rule(self, rule_: Union[Type[RuleBase], str, Pattern], *args, **kwargs):
+        """Decorator for registering a function using [`smart_make_rule`][nserver.rules.smart_make_rule].
+
+        Changed in `2.0`: This method now uses `smart_make_rule`.
+
+        Args:
+            rule_: rule as per `nserver.rules.smart_make_rule`
+            args: extra arguments to provide `smart_make_rule`
+            kwargs: extra keyword arguments to provide `smart_make_rule`
+
+        Raises:
+            ValueError: if `func` is provided in `kwargs`.
+        """
+
+        if "func" in kwargs:
+            raise ValueError("Must not provide `func` in kwargs")
+
+        def decorator(func: ResponseFunction):
+            nonlocal rule_
+            nonlocal args
+            nonlocal kwargs
+            self.register_rule(smart_make_rule(rule_, *args, func=func, **kwargs))
+            return func
+
+        return decorator
+
+
+class ServerBase(RulesContainer):
+    """Base class for shared functionality between `NameServer` and `SubServer`
+
+    New in `2.0`.
+
+    Attributes:
         hook_middleware: hook middleware
         exception_handler_middleware: Query exception handler middleware
     """
 
-    _logger: logging.Logger
-
-    def __init__(self, name: str) -> None:
+    def __init__(self) -> None:
         """
         Args:
             name: The name of the server. This is used for internal logging.
         """
-        self.name = name
-
-        self.rules: List[RuleBase] = []
+        super().__init__()
         self.hook_middleware = middleware.HookMiddleware()
         self.exception_handler_middleware = middleware.ExceptionHandlerMiddleware()
 
@@ -61,25 +148,15 @@ class Scaffold:
 
     ## Register Methods
     ## -------------------------------------------------------------------------
-    def register_rule(self, rule: RuleBase) -> None:
-        """Register the given rule
-
-        Args:
-            rule: the rule to register
-        """
-        self._debug(f"Registered rule: {rule!r}")
-        self.rules.append(rule)
-        return
-
-    def register_blueprint(
-        self, blueprint: "Blueprint", rule_: Union[Type[RuleBase], str, Pattern], *args, **kwargs
+    def register_subserver(
+        self, subserver: "SubServer", rule_: Union[Type[RuleBase], str, Pattern], *args, **kwargs
     ) -> None:
-        """Register a blueprint using [`smart_make_rule`][nserver.rules.smart_make_rule].
+        """Register a `SubServer` using [`smart_make_rule`][nserver.rules.smart_make_rule].
 
         New in `2.0`.
 
         Args:
-            blueprint: the `Blueprint` to attach
+            subserver: the `SubServer` to attach
             rule_: rule as per `nserver.rules.smart_make_rule`
             args: extra arguments to provide `smart_make_rule`
             kwargs: extra keyword arguments to provide `smart_make_rule`
@@ -90,7 +167,7 @@ class Scaffold:
 
         if "func" in kwargs:
             raise ValueError("Must not provide `func` in kwargs")
-        self.register_rule(smart_make_rule(rule_, *args, func=blueprint.entrypoint, **kwargs))
+        self.register_rule(smart_make_rule(rule_, *args, func=subserver.entrypoint, **kwargs))
         return
 
     def register_before_first_query(self, func: middleware.BeforeFirstQueryHook) -> None:
@@ -158,32 +235,6 @@ class Scaffold:
 
     # Decorators
     # ..........................................................................
-    def rule(self, rule_: Union[Type[RuleBase], str, Pattern], *args, **kwargs):
-        """Decorator for registering a function using [`smart_make_rule`][nserver.rules.smart_make_rule].
-
-        Changed in `2.0`: This method now uses `smart_make_rule`.
-
-        Args:
-            rule_: rule as per `nserver.rules.smart_make_rule`
-            args: extra arguments to provide `smart_make_rule`
-            kwargs: extra keyword arguments to provide `smart_make_rule`
-
-        Raises:
-            ValueError: if `func` is provided in `kwargs`.
-        """
-
-        if "func" in kwargs:
-            raise ValueError("Must not provide `func` in kwargs")
-
-        def decorator(func: ResponseFunction):
-            nonlocal rule_
-            nonlocal args
-            nonlocal kwargs
-            self.register_rule(smart_make_rule(rule_, *args, func=func, **kwargs))
-            return func
-
-        return decorator
-
     def before_first_query(self):
         """Decorator for registering before_first_query hook.
 
@@ -266,45 +317,8 @@ class Scaffold:
         self._query_middleware_stack.append(rule_processor)
         return
 
-    ## Logging
-    ## -------------------------------------------------------------------------
-    def _vvdebug(self, *args, **kwargs):
-        """Log very verbose debug message."""
 
-        return self._logger.log(6, *args, **kwargs)
-
-    def _vdebug(self, *args, **kwargs):
-        """Log verbose debug message."""
-
-        return self._logger.log(8, *args, **kwargs)
-
-    def _debug(self, *args, **kwargs):
-        """Log debug message."""
-
-        return self._logger.debug(*args, **kwargs)
-
-    def _info(self, *args, **kwargs):
-        """Log very verbose debug message."""
-
-        return self._logger.info(*args, **kwargs)
-
-    def _warning(self, *args, **kwargs):
-        """Log warning message."""
-
-        return self._logger.warning(*args, **kwargs)
-
-    def _error(self, *args, **kwargs):
-        """Log an error message."""
-
-        return self._logger.error(*args, **kwargs)
-
-    def _critical(self, *args, **kwargs):
-        """Log a critical message."""
-
-        return self._logger.critical(*args, **kwargs)
-
-
-class NameServer(Scaffold):
+class NameServer(ServerBase):
     """NameServer for responding to requests."""
 
     # pylint: disable=too-many-instance-attributes
@@ -315,8 +329,9 @@ class NameServer(Scaffold):
             name: The name of the server. This is used for internal logging.
             settings: settings to use with this `NameServer` instance
         """
-        super().__init__(name)
-        self._logger = logging.getLogger(f"nserver.i.{self.name}")
+        super().__init__()
+        self.name = name
+        self._logger = logging.getLogger(f"nserver.i.nameserver.{self.name}")
 
         self.raw_exception_handler_middleware = middleware.RawRecordExceptionHandlerMiddleware()
         self._user_raw_record_middleware: List[middleware.RawRecordMiddleware] = []
@@ -514,10 +529,12 @@ class NameServer(Scaffold):
         return
 
 
-class Blueprint(Scaffold):
+class SubServer(ServerBase):
     """Class that can replicate many of the functions of a `NameServer`.
 
     They can be used to construct or extend applications.
+
+    A `SubServer` maintains it's own `QueryMiddleware` stack and list of rules.
 
     New in `2.0`.
     """
@@ -527,15 +544,44 @@ class Blueprint(Scaffold):
         Args:
             name: The name of the server. This is used for internal logging.
         """
-        super().__init__(name)
-        self._logger = logging.getLogger(f"nserver.b.{self.name}")
+        super().__init__()
+        self.name = name
+        self._logger = logging.getLogger(f"nserver.i.subserver.{self.name}")
         return
 
     def entrypoint(self, query: Query) -> Response:
-        """Entrypoint into this `Blueprint`.
+        """Entrypoint into this `SubServer`.
 
         This method should be passed to rules as the function to run.
         """
         if not self._query_middleware_stack:
             self._prepare_query_middleware_stack()
         return self._query_middleware_stack[0](query)
+
+
+class Blueprint(RulesContainer, RuleBase):
+    """A container for rules that can be registered onto a server
+
+    It can be registered as normal rule: `server.register_rule(blueprint_rule)`
+
+    New in `2.0`.
+    """
+
+    def __init__(self, name: str) -> None:
+        """
+        Args:
+            name: The name of the server. This is used for internal logging.
+        """
+        super().__init__()
+        self.name = name
+        self._logger = logging.getLogger(f"nserver.i.blueprint.{self.name}")
+        return
+
+    def get_func(self, query: Query) -> Optional[ResponseFunction]:
+        for rule in self.rules:
+            func = rule.get_func(query)
+            if func is not None:
+                self._debug(f"matched {rule}")
+                return func
+        self._debug("did not match any rule")
+        return None

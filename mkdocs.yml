@@ -13,7 +13,7 @@ nav:
   - quickstart.md
   - middleware.md
   - error-handling.md
-  - blueprints.md
+  - subserver-blueprint.md
   - production-deployment.md
   - changelog.md
   - external-resources.md

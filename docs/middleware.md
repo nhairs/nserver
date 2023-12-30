@@ -2,7 +2,8 @@
 
 Middleware can be used to modify the behaviour of a server seperate to the individual rules that are registered to the server. Middleware is run on all requests and can modify both the input and response of a request.
 
-Middleware requires `nserver>=2.0`
+!!! note
+    Middleware requires `nserver>=2.0`
 
 ## Middleware Stacks
 
@@ -17,6 +18,8 @@ Some middleware is automatically added when the stacks are processed.
 For most use cases you likely want to use [`QueryMiddleware`][nserver.middleware.QueryMiddleware]. This middleware uses the high-level `Query` and `Response` objects.
 
 ### Registering `QueryMiddleware`
+
+`QueryMiddleware` can be registered to `NameServer` and `SubServer` instances using their `register_middleware` methods.
 
 ```python
 from nserver import NameServer
@@ -71,6 +74,8 @@ Once processed the `QueryMiddleware` stack will look as follows:
 [`RawRecordMiddleware`][nserver.middleware.RawRecordMiddleware] allows for modifying the raw `dnslib.DNSRecord`s that are recevied and sent by the server.
 
 ### Registering `RawRecordMiddleware`
+
+`RawRecordMiddleware` can be registered to `NameServer` instances using their `register_raw_middleware` method.
 
 ```python
 # ...
