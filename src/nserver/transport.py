@@ -381,7 +381,40 @@ class TCPv4Transport(TransportBase):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
 
     def _get_next_connection(self) -> Tuple[socket.socket, Tuple[str, int]]:
-        """Get the next connection that is ready to receive data on."""
+        """Get the next connection that is ready to receive data on.
+
+        Blocks until a good connection is found
+        """
+        while True:
+            if not self.connection_queue:
+                self._populate_connection_queue()
+
+            # There is something in the queue - attempt to get it
+            connection = self.connection_queue.popleft()
+
+            if not self._connection_viable(connection):
+                self._remove_connection(connection)
+                continue
+
+            # Connection is probably viable
+            try:
+                remote_address = connection.getpeername()
+            except OSError as e:
+                if e.errno == 107:  # Transport endpoint is not connected
+                    self._remove_connection(connection)
+                    continue
+
+                raise  # Unknown OSError - raise it.
+
+            break  # we have a valid connection
+
+        return connection, remote_address
+
+    def _populate_connection_queue(self) -> None:
+        """Populate self.connection_queue
+
+        Blocks until there is at least on connection
+        """
         while not self.connection_queue:
             # loop until connection is ready for execution
             events = self.selector.select(self.SELECT_TIMEOUT)
@@ -413,13 +446,7 @@ class TCPv4Transport(TransportBase):
             # No connections ready, take advantage to do cleanup
             elif time.time() - self.last_cache_clean > self.CONNECTION_CACHE_CLEAN_INTERVAL:
                 self._cleanup_cached_connections()
-
-        # We have a connection in the queue
-        # print(f"connection_queue: {self.connection_queue}")
-        connection = self.connection_queue.popleft()
-        remote_address = connection.getpeername()
-
-        return connection, remote_address
+        return
 
     def _accept_connection(self) -> socket.socket:
         """Accept a connection, cache it, and add it to the selector"""
