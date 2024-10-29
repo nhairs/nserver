@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1.2
-FROM python:3.7
+FROM python:3.8
 
 
 ARG SOURCE_UID

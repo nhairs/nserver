@@ -46,7 +46,7 @@ PACKAGE_VERSION=$(toml get --toml-path pyproject.toml project.version)
 # TODO: this potentially should be moved to manifest.env so that projects can easily
 # customise the main dev.sh
 SOURCE_FILES="src tests"
-PYTHON_MIN_VERSION="py37"
+PYTHON_MIN_VERSION="py38"
 
 ## Build related
 ## -----------------------------------------------------------------------------
