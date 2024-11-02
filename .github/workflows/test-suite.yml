@@ -22,7 +22,7 @@ jobs:
         run: uvx --with tox-uv tox -e lint
 
   test:
-    name: "Python Test ${{matrix.python-version}} ${{ matrix.os }}"
+    name: "Python Test ${{ matrix.os }}"
     needs: [lint]
     runs-on: "${{ matrix.os }}"
     strategy:
