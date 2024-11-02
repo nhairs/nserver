@@ -28,17 +28,6 @@ jobs:
     strategy:
       fail-fast: false  # allow tests to run on all platforms
       matrix:
-        python-version:
-          # Tox is not picking up pypi - ignore for now
-          #- "pypy@3.8"
-          #- "pypy@3.9"
-          #- "pypy@3.10"
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
         os:
           - ubuntu-latest
           - windows-latest
@@ -48,8 +37,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
 
-      - name: Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
-
       - name: Test with tox
-        run: uvx --with tox-uv,tox-gh-actions tox
+        run: uvx --with tox-uv tox
