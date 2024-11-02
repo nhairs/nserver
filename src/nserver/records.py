@@ -222,7 +222,7 @@ class SOA(RecordBase):
         - https://en.wikipedia.org/wiki/SOA_record
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         zone_name: str,
         primary_name_server: str,
