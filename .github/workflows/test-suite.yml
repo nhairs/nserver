@@ -51,4 +51,4 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Test with tox
-        run: uvx --with tox-uv tox-gh-actions tox
+        run: uvx --with tox-uv,tox-gh-actions tox
