@@ -19,7 +19,7 @@ jobs:
       - uses: astral-sh/setup-uv@v3
 
       - name: Lint with tox
-        run: uvx tox --with tox-uv -e lint
+        run: uvx --with tox-uv tox -e lint
 
   test:
     name: "Python Test ${{matrix.python-version}} ${{ matrix.os }}"
