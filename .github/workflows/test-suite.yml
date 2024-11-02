@@ -1,0 +1,54 @@
+name: Test NServer
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: "Python Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Lint with tox
+        run: uvx tox --with tox-uv -e lint
+
+  test:
+    name: "Python Test ${{matrix.python-version}} ${{ matrix.os }}"
+    needs: [lint]
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false  # allow tests to run on all platforms
+      matrix:
+        python-version:
+          - "pypy-3.8"
+          - "pypy-3.9"
+          - "pypy-3.10"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Test with tox
+        run: uvx --with tox-uv tox-gh-actions tox
