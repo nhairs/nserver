@@ -29,9 +29,10 @@ jobs:
       fail-fast: false  # allow tests to run on all platforms
       matrix:
         python-version:
-          - "pypy@3.8"
-          - "pypy@3.9"
-          - "pypy@3.10"
+          # Tox is not picking up pypi - ignore for now
+          #- "pypy@3.8"
+          #- "pypy@3.9"
+          #- "pypy@3.10"
           - "3.8"
           - "3.9"
           - "3.10"
