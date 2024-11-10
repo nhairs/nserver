@@ -6,7 +6,7 @@ from __future__ import annotations
 ## Standard Library
 import inspect
 import threading
-from typing import TYPE_CHECKING, Callable, Generic, TypeVar, TypeAlias
+from typing import TYPE_CHECKING, Callable, Generic, TypeVar
 import sys
 
 if sys.version_info < (3, 10):
