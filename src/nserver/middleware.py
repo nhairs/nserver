@@ -9,11 +9,6 @@ import threading
 from typing import TYPE_CHECKING, Callable, Generic, TypeVar
 import sys
 
-if sys.version_info < (3, 10):
-    from typing_extensions import TypeAlias
-else:
-    from typing import TypeAlias
-
 ## Installed
 import dnslib
 from pillar.logging import LoggingMixin
@@ -21,6 +16,13 @@ from pillar.logging import LoggingMixin
 ## Application
 from .models import Query, Response
 from .rules import coerce_to_response, RuleResult
+
+## Special
+if sys.version_info < (3, 10):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
+
 
 ### CONSTANTS
 ### ============================================================================
