@@ -7,6 +7,12 @@ from __future__ import annotations
 import inspect
 import threading
 from typing import TYPE_CHECKING, Callable, Generic, TypeVar, TypeAlias
+import sys
+
+if sys.version_info < (3, 10):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
 
 ## Installed
 import dnslib

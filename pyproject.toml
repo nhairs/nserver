@@ -16,6 +16,7 @@ dependencies = [
     "dnslib",
     "pillar~=0.3",
     "tldextract",
+    "typing-extensions;python_version<'3.10'",
 ]
 
 # Extra information
