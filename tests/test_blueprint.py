@@ -7,7 +7,7 @@
 import dnslib
 import pytest
 
-from nserver import NameServer, Blueprint, Query, A
+from nserver import NameServer, RawNameServer, Blueprint, Query, A
 
 ## Application
 
@@ -18,6 +18,7 @@ server = NameServer("test_blueprint")
 blueprint_1 = Blueprint("blueprint_1")
 blueprint_2 = Blueprint("blueprint_2")
 blueprint_3 = Blueprint("blueprint_3")
+raw_server = RawNameServer(server)
 
 
 ## Rules
@@ -36,8 +37,6 @@ server.register_rule(blueprint_1)
 server.register_rule(blueprint_2)
 blueprint_2.register_rule(blueprint_3)
 
-server._prepare_middleware_stacks()
-
 
 ### TESTS
 ### ============================================================================
@@ -45,7 +44,7 @@ server._prepare_middleware_stacks()
 ## -----------------------------------------------------------------------------
 @pytest.mark.parametrize("question", ["s.com", "b1.com", "b2.com", "b3.b2.com"])
 def test_response(question: str):
-    response = server._process_dns_record(dnslib.DNSRecord.question(question))
+    response = raw_server.process_request(dnslib.DNSRecord.question(question))
     assert len(response.rr) == 1
     assert response.rr[0].rtype == 1
     assert response.rr[0].rname == question
@@ -54,7 +53,7 @@ def test_response(question: str):
 
 @pytest.mark.parametrize("question", ["miss.s.com", "miss.b1.com", "miss.b2.com", "miss.b3.b2.com"])
 def test_nxdomain(question: str):
-    response = server._process_dns_record(dnslib.DNSRecord.question(question))
+    response = raw_server.process_request(dnslib.DNSRecord.question(question))
     assert len(response.rr) == 0
     assert response.header.rcode == dnslib.RCODE.NXDOMAIN
     return

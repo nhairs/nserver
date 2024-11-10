@@ -10,8 +10,7 @@ import unittest.mock
 import dnslib
 import pytest
 
-from nserver import NameServer, SubServer, Query, Response, ALL_QTYPES, ZoneRule, A
-from nserver.server import ServerBase
+from nserver import NameServer, RawNameServer, Query, Response, ALL_QTYPES, ZoneRule, A
 
 ## Application
 
@@ -19,9 +18,10 @@ from nserver.server import ServerBase
 ### ============================================================================
 IP = "127.0.0.1"
 nameserver = NameServer("test_subserver")
-subserver_1 = SubServer("subserver_1")
-subserver_2 = SubServer("subserver_2")
-subserver_3 = SubServer("subserver_3")
+subserver_1 = NameServer("subserver_1")
+subserver_2 = NameServer("subserver_2")
+subserver_3 = NameServer("subserver_3")
+raw_nameserver = RawNameServer(nameserver)
 
 
 ## Rules
@@ -36,7 +36,7 @@ def dummy_rule(query: Query) -> A:
 
 ## Hooks
 ## -----------------------------------------------------------------------------
-def register_hooks(server: ServerBase) -> None:
+def register_hooks(server: NameServer) -> None:
     server.register_before_first_query(unittest.mock.MagicMock(wraps=lambda: None))
     server.register_before_query(unittest.mock.MagicMock(wraps=lambda q: None))
     server.register_after_query(unittest.mock.MagicMock(wraps=lambda r: r))
@@ -44,11 +44,11 @@ def register_hooks(server: ServerBase) -> None:
 
 
 @no_type_check
-def reset_hooks(server: ServerBase) -> None:
-    server.hook_middleware.before_first_query_run = False
-    server.hook_middleware.before_first_query[0].reset_mock()
-    server.hook_middleware.before_query[0].reset_mock()
-    server.hook_middleware.after_query[0].reset_mock()
+def reset_hooks(server: NameServer) -> None:
+    server.hooks.before_first_query_run = False
+    server.hooks.before_first_query[0].reset_mock()
+    server.hooks.before_query[0].reset_mock()
+    server.hooks.after_query[0].reset_mock()
     return
 
 
@@ -61,10 +61,10 @@ def reset_all_hooks() -> None:
 
 
 @no_type_check
-def check_hook_call_count(server: ServerBase, bfq_count: int, bq_count: int, aq_count: int) -> None:
-    assert server.hook_middleware.before_first_query[0].call_count == bfq_count
-    assert server.hook_middleware.before_query[0].call_count == bq_count
-    assert server.hook_middleware.after_query[0].call_count == aq_count
+def check_hook_call_count(server: NameServer, bfq_count: int, bq_count: int, aq_count: int) -> None:
+    assert server.hooks.before_first_query[0].call_count == bfq_count
+    assert server.hooks.before_query[0].call_count == bq_count
+    assert server.hooks.after_query[0].call_count == aq_count
     return
 
 
@@ -111,23 +111,11 @@ def bad_error_handler(query: Query, exception: Exception) -> Response:
 nameserver.register_exception_handler(ThrowAnotherError, bad_error_handler)
 
 
-def _raw_record_error_handler(record: dnslib.DNSRecord, exception: Exception) -> dnslib.DNSRecord:
-    # pylint: disable=unused-argument
-    response = record.reply()
-    response.header.rcode = dnslib.RCODE.SERVFAIL
-    return response
-
-
-raw_record_error_handler = unittest.mock.MagicMock(wraps=_raw_record_error_handler)
-nameserver.register_raw_exception_handler(ErrorForTesting, raw_record_error_handler)
-
 ## Get server ready
 ## -----------------------------------------------------------------------------
 nameserver.register_subserver(subserver_1, ZoneRule, "sub1.com", ALL_QTYPES)
 nameserver.register_subserver(subserver_2, ZoneRule, "sub2.com", ALL_QTYPES)
 subserver_2.register_subserver(subserver_3, ZoneRule, "sub3.sub2.com", ALL_QTYPES)
-
-nameserver._prepare_middleware_stacks()
 
 
 ### TESTS
@@ -136,7 +124,7 @@ nameserver._prepare_middleware_stacks()
 ## -----------------------------------------------------------------------------
 @pytest.mark.parametrize("question", ["s.com", "sub1.com", "sub2.com", "sub3.sub2.com"])
 def test_response(question: str):
-    response = nameserver._process_dns_record(dnslib.DNSRecord.question(question))
+    response = raw_nameserver.process_request(dnslib.DNSRecord.question(question))
     assert len(response.rr) == 1
     assert response.rr[0].rtype == 1
     assert response.rr[0].rname == question
@@ -147,7 +135,7 @@ def test_response(question: str):
     "question", ["miss.s.com", "miss.sub1.com", "miss.sub2.com", "miss.sub3.sub2.com"]
 )
 def test_nxdomain(question: str):
-    response = nameserver._process_dns_record(dnslib.DNSRecord.question(question))
+    response = raw_nameserver.process_request(dnslib.DNSRecord.question(question))
     assert len(response.rr) == 0
     assert response.header.rcode == dnslib.RCODE.NXDOMAIN
     return
@@ -174,7 +162,7 @@ def test_hooks(question: str, hook_counts: List[int]):
 
     ## Test
     for _ in range(5):
-        response = nameserver._process_dns_record(dnslib.DNSRecord.question(question))
+        response = raw_nameserver.process_request(dnslib.DNSRecord.question(question))
         assert len(response.rr) == 1
         assert response.rr[0].rtype == 1
         assert response.rr[0].rname == question

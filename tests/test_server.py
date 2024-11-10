@@ -10,7 +10,7 @@ import unittest.mock
 import dnslib
 import pytest
 
-from nserver import NameServer, Query, Response, A
+from nserver import NameServer, RawNameServer, Query, Response, A
 
 ## Application
 
@@ -18,6 +18,7 @@ from nserver import NameServer, Query, Response, A
 ### ============================================================================
 IP = "127.0.0.1"
 server = NameServer("tests")
+raw_server = RawNameServer(server)
 
 
 ## Rules
@@ -106,11 +107,10 @@ def _raw_record_error_handler(record: dnslib.DNSRecord, exception: Exception) ->
 
 
 raw_record_error_handler = unittest.mock.MagicMock(wraps=_raw_record_error_handler)
-server.register_raw_exception_handler(ErrorForTesting, raw_record_error_handler)
+raw_server.register_exception_handler(ErrorForTesting, raw_record_error_handler)
 
 ## Get server ready
 ## -----------------------------------------------------------------------------
-server._prepare_middleware_stacks()
 
 
 ### TESTS
@@ -118,13 +118,13 @@ server._prepare_middleware_stacks()
 ## NameServer._process_dns_record
 ## -----------------------------------------------------------------------------
 def test_none_response():
-    response = server._process_dns_record(dnslib.DNSRecord.question("none-response.com"))
+    response = raw_server.process_request(dnslib.DNSRecord.question("none-response.com"))
     assert len(response.rr) == 0
     return
 
 
 def test_response_response():
-    response = server._process_dns_record(dnslib.DNSRecord.question("response-response.com"))
+    response = raw_server.process_request(dnslib.DNSRecord.question("response-response.com"))
     assert len(response.rr) == 1
     assert response.rr[0].rtype == 1
     assert response.rr[0].rname == "response-response.com."
@@ -132,7 +132,7 @@ def test_response_response():
 
 
 def test_record_response():
-    response = server._process_dns_record(dnslib.DNSRecord.question("record-response.com"))
+    response = raw_server.process_request(dnslib.DNSRecord.question("record-response.com"))
     assert len(response.rr) == 1
     assert response.rr[0].rtype == 1
     assert response.rr[0].rname == "record-response.com."
@@ -140,7 +140,7 @@ def test_record_response():
 
 
 def test_multi_record_response():
-    response = server._process_dns_record(dnslib.DNSRecord.question("multi-record-response.com"))
+    response = raw_server.process_request(dnslib.DNSRecord.question("multi-record-response.com"))
     assert len(response.rr) == 2
     for record in response.rr:
         assert record.rtype == 1
@@ -160,12 +160,12 @@ def test_multi_record_response():
 )
 def test_hook_call_count(hook, call_count):
     # Setup
-    server.hook_middleware.before_first_query_run = False
+    server.hooks.before_first_query_run = False
     hook.reset_mock()
 
     # Test
     for _ in range(5):
-        response = server._process_dns_record(dnslib.DNSRecord.question("dummy.com"))
+        response = raw_server.process_request(dnslib.DNSRecord.question("dummy.com"))
         # Ensure respone returns and unchanged
         assert len(response.rr) == 1
         assert response.rr[0].rtype == 1
@@ -183,7 +183,7 @@ def test_query_error_handler():
     raw_record_error_handler.reset_mock()
 
     # Test
-    response = server._process_dns_record(dnslib.DNSRecord.question("throw-error.com"))
+    response = raw_server.process_request(dnslib.DNSRecord.question("throw-error.com"))
 
     assert len(response.rr) == 0
     assert response.header.get_rcode() == dnslib.RCODE.SERVFAIL
@@ -199,7 +199,7 @@ def test_raw_record_error_handler():
     raw_record_error_handler.reset_mock()
 
     # Test
-    response = server._process_dns_record(dnslib.DNSRecord.question("throw-another-error.com"))
+    response = raw_server.process_request(dnslib.DNSRecord.question("throw-another-error.com"))
 
     assert len(response.rr) == 0
     assert response.header.get_rcode() == dnslib.RCODE.SERVFAIL
