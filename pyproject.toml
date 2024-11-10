@@ -67,6 +67,9 @@ dev = [
     "mike",
 ]
 
+[project.scripts]
+nserver = "nserver.__main__:main"
+
 [tool.setuptools.package-data]
 nserver = ["py.typed"]
 

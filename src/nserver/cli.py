@@ -6,6 +6,8 @@ from __future__ import annotations
 ## Standard Library
 import argparse
 import importlib
+import os
+import pydoc
 
 ## Installed
 import pillar.application
@@ -38,6 +40,7 @@ class CliApplication(pillar.application.Application):
         parser.add_argument(
             "--server",
             action="store",
+            required=True,
             help=(
                 "Import path of server / factory to run in the form of "
                 "package.module.path:attribute"
@@ -100,7 +103,13 @@ class CliApplication(pillar.application.Application):
     def get_server(self) -> NameServer | RawNameServer:
         """Factory for getting the server to run based on current settings"""
         module_path, attribute_path = self.args.server.split(":")
-        obj: object = importlib.import_module(module_path)
+
+        obj: object
+        if os.path.isfile(module_path):
+            # Ref: https://stackoverflow.com/a/68361215/12281814
+            obj = pydoc.importfile(module_path)
+        else:
+            obj = importlib.import_module(module_path)
 
         for attribute_name in attribute_path.split("."):
             obj = getattr(obj, attribute_name)
@@ -123,10 +132,3 @@ class CliApplication(pillar.application.Application):
             self.args.transport(self.args.host, self.args.port),
         )
         return application
-
-
-### MAIN
-### ============================================================================
-if __name__ == "__main__":
-    app = CliApplication()
-    app.run()
