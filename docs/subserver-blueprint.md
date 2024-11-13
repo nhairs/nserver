@@ -3,7 +3,7 @@
 
 ## Sub-Servers
 
-[`SubServer`][nserver.server.SubServer] provides a way for you to compose your application. They support most of the same functionality as a `NameServer`.
+To allow for composing an application into different parts, a [`NameServer`][nserver.server.NameServer] can be included in another `NameServer`.
 
 Use cases:
 
@@ -12,15 +12,15 @@ Use cases:
 - Allow custom packages to define their own rules that you can add to your own server.
 
 !!! note
-    SubServers requires `nserver>=2.0`
+    Adding a `NameServer` to another requires `nserver>=3.0`
 
 ### Using Sub-Servers
 
 ```python
-from nserver import SubServer, NameServer, ZoneRule, ALL_CTYPES, A, TXT
+from nserver import NameServer, ZoneRule, ALL_CTYPES, A, TXT
 
-# First SubServer
-mysite = SubServer("mysite")
+# First child NameServer
+mysite = NameServer("mysite")
 
 @mysite.rule("nicholashairs.com", ["A"])
 @mysite.rule("www.nicholashairs.com", ["A"])
@@ -32,14 +32,14 @@ def nicholashairs_catchall(query: Query) -> None:
     # Return empty response for all other queries
     return None
 
-# Second SubServer
-en_subserver = SubServer("english-speaking-blueprint")
+# Second child NameServer
+en_subserver = NameServer("english-speaking-blueprint")
 
 @en_subserver.rule("hello.{base_domain}", ["TXT"])
 def en_hello(query: Query) -> TXT:
     return TXT(query.name, "Hello There!")
 
-# Register to NameServer
+# Register to main NameServer
 server = NameServer("server")
 server.register_subserver(mysite, ZoneRule, "nicholashairs.com", ALL_CTYPES)
 server.register_subserver(en_subserver, ZoneRule, "au", ALL_CTYPES)
@@ -47,22 +47,18 @@ server.register_subserver(en_subserver, ZoneRule, "nz", ALL_CTYPES)
 server.register_subserver(en_subserver, ZoneRule, "uk", ALL_CTYPES)
 ```
 
-#### Middleware, Hooks, and Error Handling
+#### Middleware, Hooks, and Exception Handling
 
-Sub-Servers maintain their own `QueryMiddleware` stack which will run before any rule function is run. Included in this stack is the `HookMiddleware` and `ExceptionHandlerMiddleware`.
+Don't forget that each `NameServer` maintains it's own middleware stack, exception handlers, and hooks.
 
-### Key differences with `NameServer`
-
-- Does not use settings (`Setting`).
-- Does not have a `Transport`.
-- Does not have a `RawRecordMiddleware` stack.
+In particular errors will not propagate up from a child server to it's parent as the child's exception handler will catch any exception and return a response.
 
 ## Blueprints
 
 [`Blueprint`][nserver.server.Blueprint]s act as a container for rules. They are an efficient way to compose your application if you do not want or need to use functionality provided by a `QueryMiddleware` stack.
 
 !!! note
-    Blueprints require `nserver>=2.0`
+    Blueprints require `nserver>=3.0`
 
 ### Using Blueprints
 
@@ -88,7 +84,7 @@ en_subserver.register_rule(no_email_blueprint)
 mysite.rules.insert(0, no_email_blueprint)
 ```
 
-### Key differences with `NameServer` and `SubServer`
+### Key differences with `NameServer`
 
 - Only provides the `@rule` decorator and `register_rule` method.
   - It does not have a `QueryMiddleware` stack which means it does not support hooks or error-handling.

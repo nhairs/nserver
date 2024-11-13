@@ -30,7 +30,7 @@ NServer has been inspired by easy to use high level frameworks such as [Flask](h
 
 Follow our [Quickstart Guide](quickstart.md).
 
-```python title="TLDR"
+```python title="tldr.py"
 from nserver import NameServer, Query, A
 
 server = NameServer("example")
@@ -43,6 +43,9 @@ if __name__ == "__main__":
     server.run()
 ```
 
+```bash
+nserver --server tldr.py:server
+```
 
 ## Bugs, Feature Requests etc
 Please [submit an issue on github](https://github.com/nhairs/nserver/issues).

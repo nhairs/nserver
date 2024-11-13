@@ -1,11 +1,8 @@
 # Error Handling
 
-Custom exception handling is handled through the [`ExceptionHandlerMiddleware`][nserver.middleware.ExceptionHandlerMiddleware] and [`RawRecordExceptionHandlerMiddleware`][nserver.middleware.RawRecordExceptionHandlerMiddleware] [Middleware][middleware]. These middleware will catch any `Exception`s raised by their respective middleware stacks.
+Custom exception handling is handled through the [`ExceptionHandlerMiddleware`][nserver.middleware.ExceptionHandlerMiddleware] and [`RawExceptionHandlerMiddleware`][nserver.middleware.RawExceptionHandlerMiddleware] [Middleware][middleware]. These middleware will catch any `Exception`s raised by their respective middleware stacks.
 
-!!! note
-    Error handling requires `nserver>=2.0`
-
-In general you are probably able to use the `ExceptionHandlerMiddleware` as the `RawRecordExceptionHandlerMiddleware` is only needed to catch exceptions resulting from `RawRecordMiddleware` or broken exception handlers in the `ExceptionHandlerMiddleware`. If you only write `QueryMiddleware` and your `ExceptionHandlerMiddleware` handlers never raise exceptions then you'll be good to go with just the `ExceptionHandlerMiddleware`.
+In general you are probably able to use the `ExceptionHandlerMiddleware` as the `RawExceptionHandlerMiddleware` is only needed to catch exceptions resulting from `RawMiddleware` or broken exception handlers in the `ExceptionHandlerMiddleware`. If you only write `QueryMiddleware` and your `ExceptionHandlerMiddleware` handlers never raise exceptions then you'll be good to go with just the `ExceptionHandlerMiddleware`.
 
 Both of these middleware have a default exception handler that will be used for anything not matching a registered handler. The default handler can be overwritten by registering a handler for the `Exception` class.
 
@@ -16,7 +13,7 @@ Handlers are chosen by finding a handler for the most specific parent class of t
 
 ## Registering Exception Handlers
 
-Exception handlers can be registered to `NameServer` and `SubServer` instances using either their `@[raw_]exception_handler` decorators or their `register_[raw_]exception_handler` methods.
+Exception handlers can be registered to `NameServer` and `RawNameSeerver` instances using either their `@exception_handler` decorators or their `register_exception_handler` methods.
 
 ```python
 import dnslib
