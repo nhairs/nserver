@@ -2,9 +2,6 @@
 
 Middleware can be used to modify the behaviour of a server seperate to the individual rules that are registered to the server. Middleware is run on all requests and can modify both the input and response of a request.
 
-!!! note
-    Middleware requires `nserver>=3.0`
-
 ## Middleware Stacks
 
 Middleware operates in a stack with each middleware calling the middleware below it until one returns and the result is propagated back up the chain. NServer uses two stacks, the outmost stack deals with raw DNS records (`RawMiddleware`), which will eventually convert the record to a `Query` which will then be passed to the main `QueryMiddleware` stack.
@@ -19,7 +16,7 @@ For most use cases you likely want to use [`QueryMiddleware`][nserver.middleware
 
 ### Registering `QueryMiddleware`
 
-`QueryMiddleware` can be registered to `NameServer` and `SubServer` instances using their `register_middleware` methods.
+`QueryMiddleware` can be registered to `NameServer` instances using their `register_middleware` methods.
 
 ```python
 from nserver import NameServer
@@ -41,7 +38,7 @@ from nserver import Query, Response
 class MyLoggingMiddleware(QueryMiddleware):
     def __init__(self, logging_name: str):
         super().__init__()
-        self.logger = logging.getLogger(f"my-awesome-app.{name}")
+        self.logger = logging.getLogger(f"my-awesome-app.{logging_name}")
         return
 
     def process_query(
@@ -60,7 +57,7 @@ server.register_middleware(MyLoggingMiddleware("bar"))
 
 Once processed the `QueryMiddleware` stack will look as follows:
 
-- [`ExceptionHandlerMiddleware`][nserver.middleware.ExceptionHandlerMiddleware]
+- [`QueryExceptionHandlerMiddleware`][nserver.middleware.QueryExceptionHandlerMiddleware]
   - Customisable error handler for `Exception`s originating from within the stack.
 - `<registered middleware>`
 - [`HookMiddleware`][nserver.middleware.HookMiddleware]

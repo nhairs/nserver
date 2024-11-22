@@ -14,9 +14,6 @@ NServer has been built upon [dnslib](https://github.com/paulc/dnslib) however us
 
 NServer has been inspired by easy to use high level frameworks such as [Flask](https://github.com/pallets/flask) or [Requests](https://github.com/psf/requests).
 
-!!! warning
-    NServer is currently Beta software and does not have complete documentation, testing, or implementation of certain features.
-
 
 ## Features
 
@@ -53,9 +50,6 @@ Please [submit an issue on github](https://github.com/nhairs/nserver/issues).
 In the case of bug reports, please help us help you by following best practices [^1^](https://marker.io/blog/write-bug-report/) [^2^](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html).
 
 In the case of feature requests, please provide background to the problem you are trying to solve so to help find a solution that makes the most sense for the library as well as your usecase. Before making a feature request consider looking at my (roughly written) [design notes](https://github.com/nhairs/nserver/blob/main/DESIGN_NOTES.md).
-
-## Contributing
-I am still working through open source licencing and contributing, so not taking PRs at this point in time. Instead raise and issue and I'll try get to it as soon a feasible.
 
 ## Licence
 This project is licenced under the MIT Licence - see [`LICENCE`](https://github.com/nhairs/nserver/blob/main/LICENCE).

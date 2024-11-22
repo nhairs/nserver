@@ -1,8 +1,8 @@
 # Error Handling
 
-Custom exception handling is handled through the [`ExceptionHandlerMiddleware`][nserver.middleware.ExceptionHandlerMiddleware] and [`RawExceptionHandlerMiddleware`][nserver.middleware.RawExceptionHandlerMiddleware] [Middleware][middleware]. These middleware will catch any `Exception`s raised by their respective middleware stacks.
+Custom exception handling is handled through the [`QueryExceptionHandlerMiddleware`][nserver.middleware.QueryExceptionHandlerMiddleware] and [`RawExceptionHandlerMiddleware`][nserver.middleware.RawExceptionHandlerMiddleware] [Middleware][middleware]. These middleware will catch any `Exception`s raised by their respective middleware stacks.
 
-In general you are probably able to use the `ExceptionHandlerMiddleware` as the `RawExceptionHandlerMiddleware` is only needed to catch exceptions resulting from `RawMiddleware` or broken exception handlers in the `ExceptionHandlerMiddleware`. If you only write `QueryMiddleware` and your `ExceptionHandlerMiddleware` handlers never raise exceptions then you'll be good to go with just the `ExceptionHandlerMiddleware`.
+In general you are probably able to use the `QueryExceptionHandlerMiddleware` as the `RawExceptionHandlerMiddleware` is only needed to catch exceptions resulting from `RawMiddleware` or broken exception handlers in the `QueryExceptionHandlerMiddleware`. If you only write `QueryMiddleware` and your `QueryExceptionHandlerMiddleware` handlers never raise exceptions then you'll be good to go with just the `QueryExceptionHandlerMiddleware`.
 
 Both of these middleware have a default exception handler that will be used for anything not matching a registered handler. The default handler can be overwritten by registering a handler for the `Exception` class.
 

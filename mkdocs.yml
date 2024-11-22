@@ -15,8 +15,10 @@ nav:
   - error-handling.md
   - subserver-blueprint.md
   - production-deployment.md
-  - changelog.md
   - external-resources.md
+  - changelog.md
+  - security.md
+  - contributing.md
   - API Reference:
     - ... | reference/nserver/*
 
@@ -84,10 +86,10 @@ plugins:
         python:
           paths:
             - src
-          #import:
-          #  - https://docs.python.org/3/objects.inv
-          #  - https://mkdocstrings.github.io/objects.inv
-          #  - https://mkdocstrings.github.io/griffe/objects.inv
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://mkdocstrings.github.io/objects.inv
+            - https://mkdocstrings.github.io/griffe/objects.inv
           options:
             filters:
               - "!^_"

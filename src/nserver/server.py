@@ -258,7 +258,13 @@ class RawNameServer(
 class NameServer(
     MiddlewareMixin[m.QueryMiddleware, m.QueryExceptionHandlerMiddleware], RulesMixin, LoggingMixin
 ):
-    """High level DNS Name Server for responding to DNS queries."""
+    """High level DNS Name Server for responding to DNS queries.
+
+    *Changed in `3.0`*:
+
+    - "Raw" functionality removed and moved to `RawNameServer`.
+    - "Transport" and "Application" functionality removed.
+    """
 
     def __init__(self, name: str) -> None:
         """

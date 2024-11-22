@@ -1,6 +1,5 @@
 # Sub-Servers and Blueprints
 
-
 ## Sub-Servers
 
 To allow for composing an application into different parts, a [`NameServer`][nserver.server.NameServer] can be included in another `NameServer`.
@@ -10,9 +9,6 @@ Use cases:
 - Split up your application across different servers for maintainability / composability.
 - Reuse a server registered under different rules.
 - Allow custom packages to define their own rules that you can add to your own server.
-
-!!! note
-    Adding a `NameServer` to another requires `nserver>=3.0`
 
 ### Using Sub-Servers
 
@@ -57,9 +53,6 @@ In particular errors will not propagate up from a child server to it's parent as
 
 [`Blueprint`][nserver.server.Blueprint]s act as a container for rules. They are an efficient way to compose your application if you do not want or need to use functionality provided by a `QueryMiddleware` stack.
 
-!!! note
-    Blueprints require `nserver>=3.0`
-
 ### Using Blueprints
 
 ```python
@@ -91,4 +84,4 @@ mysite.rules.insert(0, no_email_blueprint)
 - Is used directly in `register_rule` (e.g. `some_server.register_rule(my_blueprint)`).
 - If rule does not match an internal rule will continue to the next rule in the parent server.
 
-  In comparison the server classes will return `NXDOMAIN` if a rule doesn't match their internal rules.
+  In comparison `NameServer` instances will return `NXDOMAIN` if a rule doesn't match their internal rules.
