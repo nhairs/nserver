@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactoring of `nserver.server` and `nserver.middleware` classes.
 - `NameServer` `name` argument / attribute is no longer used when creating the logger.
 
+### Fixed
+- Uncaught errors from dropped connections in `nserver.transport.TCPv4Transport`
+
 ### Development Changes
 - Development tooling has moved to `uv`.
   - The tooling remains wrapped in `dev.sh`.
