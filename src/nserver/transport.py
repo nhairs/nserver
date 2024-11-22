@@ -377,7 +377,7 @@ class TCPv4Transport(TransportBase):
     def __repr__(self):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
 
-    def _get_next_connection(self) -> Tuple[socket.socket, Tuple[str, int]]:
+    def _get_next_connection(self) -> tuple[socket.socket, tuple[str, int]]:
         """Get the next connection that is ready to receive data on.
 
         Blocks until a good connection is found
