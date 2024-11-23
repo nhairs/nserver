@@ -11,6 +11,7 @@ watch:
 nav:
   - "Home": index.md
   - quickstart.md
+  - architecture.md
   - middleware.md
   - error-handling.md
   - subserver-blueprint.md
