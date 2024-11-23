@@ -13,6 +13,11 @@
     }
   },
   {
+    "version": "1.0.2",
+    "title": "1.0.2",
+    "aliases": []
+  },
+  {
     "version": "1.0.1",
     "title": "1.0.1",
     "aliases": [],
@@ -33,10 +38,5 @@
       "git_commit_short": "36d626c",
       "build_timestamp": "1698997905"
     }
-  },
-  {
-    "version": "1.0.2",
-    "title": "1.0.2",
-    "aliases": []
   }
 ]
