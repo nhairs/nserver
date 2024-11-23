@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NameServer` `name` argument / attribute is no longer used when creating the logger.
 
 ### Fixed
-- Uncaught errors from dropped connections in `nserver.transport.TCPv4Transport`
+- Uncaught errors from dropped connections in `nserver.transport.TCPv4Transport` [#6](https://github.com/nhairs/nserver/issues/6)
 
 ### Development Changes
 - Development tooling has moved to `uv`.
