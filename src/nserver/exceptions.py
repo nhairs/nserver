@@ -1,10 +1,10 @@
 ### IMPORTS
 ### ============================================================================
+## Future
+from __future__ import annotations
+
 ## Standard Library
 import base64
-
-# Note: Union can only be replaced with `X | Y` in 3.10+
-from typing import Tuple, Union
 
 ## Installed
 
@@ -17,7 +17,7 @@ class InvalidMessageError(ValueError):
     """An invalid DNS message"""
 
     def __init__(
-        self, error: Exception, raw_data: bytes, remote_address: Union[str, Tuple[str, int]]
+        self, error: Exception, raw_data: bytes, remote_address: str | tuple[str, int]
     ) -> None:
         """
         Args:

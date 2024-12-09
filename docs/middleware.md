@@ -2,11 +2,9 @@
 
 Middleware can be used to modify the behaviour of a server seperate to the individual rules that are registered to the server. Middleware is run on all requests and can modify both the input and response of a request.
 
-Middleware requires `nserver>=2.0`
-
 ## Middleware Stacks
 
-Middleware operates in a stack with each middleware calling the middleware below it until one returns and the result is propagated back up the chain. NServer uses two stacks, the outmost stack deals with raw DNS records (`RawRecordMiddleware`), which will eventually convert the record to a `Query` which will then be passed to the main `QueryMiddleware` stack.
+Middleware operates in a stack with each middleware calling the middleware below it until one returns and the result is propagated back up the chain. NServer uses two stacks, the outmost stack deals with raw DNS records (`RawMiddleware`), which will eventually convert the record to a `Query` which will then be passed to the main `QueryMiddleware` stack.
 
 Middleware can be added to the application until it is run. Once the server begins running the middleware cannot be modified. The ordering of middleware is kept in the order in which it is added to the server; that is the first middleware registered will be called before the second and so on.
 
@@ -17,6 +15,8 @@ Some middleware is automatically added when the stacks are processed.
 For most use cases you likely want to use [`QueryMiddleware`][nserver.middleware.QueryMiddleware]. This middleware uses the high-level `Query` and `Response` objects.
 
 ### Registering `QueryMiddleware`
+
+`QueryMiddleware` can be registered to `NameServer` instances using their `register_middleware` methods.
 
 ```python
 from nserver import NameServer
@@ -38,7 +38,7 @@ from nserver import Query, Response
 class MyLoggingMiddleware(QueryMiddleware):
     def __init__(self, logging_name: str):
         super().__init__()
-        self.logger = logging.getLogger(f"my-awesome-app.{name}")
+        self.logger = logging.getLogger(f"my-awesome-app.{logging_name}")
         return
 
     def process_query(
@@ -57,36 +57,39 @@ server.register_middleware(MyLoggingMiddleware("bar"))
 
 Once processed the `QueryMiddleware` stack will look as follows:
 
-- [`ExceptionHandlerMiddleware`][nserver.middleware.ExceptionHandlerMiddleware]
+- [`QueryExceptionHandlerMiddleware`][nserver.middleware.QueryExceptionHandlerMiddleware]
   - Customisable error handler for `Exception`s originating from within the stack.
 - `<registered middleware>`
 - [`HookMiddleware`][nserver.middleware.HookMiddleware]
   - Runs hooks registered to the server. This can be considered a simplified version of middleware.
-- [`RuleProcessor`][nserver.middleware.RuleProcessor]
-  - The entry point into our rule processing.
 
 
-## `RawRecordMiddleware`
+## `RawMiddleware`
 
-[`RawRecordMiddleware`][nserver.middleware.RawRecordMiddleware] allows for modifying the raw `dnslib.DNSRecord`s that are recevied and sent by the server.
+[`RawMiddleware`][nserver.middleware.RawMiddleware] allows for modifying the raw `dnslib.DNSRecord`s that are recevied and sent by the server.
 
-### Registering `RawRecordMiddleware`
+### Registering `RawMiddleware`
+
+`RawMiddleware` can be registered to `RawNameServer` instances using their `register_middleware` method.
 
 ```python
 # ...
-from nserver.middleware import RawRecordMiddleware
+from nserver import RawNameServer
+from nserver.middleware import RawMiddleware
 
-server.register_raw_middleware(RawRecordMiddleware())
+raw_server = RawNameServer(server)
+
+server.register_middleware(RawMiddleware())
 ```
 
-### Creating your own `RawRecordMiddleware`
+### Creating your own `RawMiddleware`
 
-Using an unmodified `RawRecordMiddleware` isn't very interesting as it just passes the request onto the next middleware. To add your own middleware you should subclass `RawRecordMiddleware` and override the `process_record` method.
+Using an unmodified `RawMiddleware` isn't very interesting as it just passes the request onto the next middleware. To add your own middleware you should subclass `RawMiddleware` and override the `process_record` method.
 
 ```python
 # ...
 
-class SizeLimiterMiddleware(RawRecordMiddleware):
+class SizeLimiterMiddleware(RawMiddleware):
     def __init__(self, max_size: int):
         super().__init__()
         self.max_size = max_size
@@ -109,15 +112,13 @@ class SizeLimiterMiddleware(RawRecordMiddleware):
 
         return response
 
-server.register_raw_middleware(SizeLimiterMiddleware(1400))
+server.register_middleware(SizeLimiterMiddleware(1400))
 ```
 
-### Default `RawRecordMiddleware` stack
+### Default `RawMiddleware` stack
 
-Once processed the `RawRecordMiddleware` stack will look as follows:
+Once processed the `RawMiddleware` stack will look as follows:
 
-- [`RawRecordExceptionHandlerMiddleware`][nserver.middleware.RawRecordExceptionHandlerMiddleware]
+- [`RawExceptionHandlerMiddleware`][nserver.middleware.RawExceptionHandlerMiddleware]
   - Customisable error handler for `Exception`s originating from within the stack.
 - `<registered raw middleware>`
-- [`QueryMiddlewareProcessor`][nserver.middleware.QueryMiddlewareProcessor]
-  - entry point into the `QueryMiddleware` stack.

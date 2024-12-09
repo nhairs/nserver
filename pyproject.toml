@@ -4,17 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nserver"
-version = "2.0.0"
+version = "3.0.0.dev1"
 description = "DNS Name Server Framework"
 authors  = [
     {name = "Nicholas Hairs", email = "info+nserver@nicholashairs.com"},
 ]
 
 # Dependency Information
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "dnslib",
+    "pillar~=0.3",
     "tldextract",
+    "typing-extensions;python_version<'3.10'",
 ]
 
 # Extra information
@@ -23,12 +25,12 @@ license = {text = "MIT"}
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Typing :: Typed",
     "Topic :: Internet",
@@ -36,17 +38,13 @@ classifiers = [
 ]
 
 [project.urls]
-homepage = "https://nhairs.github.io/nserver/latest/"
-github = "https://github.com/nhairs/nserver"
+HomePage = "https://nhairs.github.io/nserver"
+GitHub = "https://github.com/nhairs/nserver"
 
 [project.optional-dependencies]
-build = [
-    "setuptools",
-    "wheel",
-]
-
 dev = [
-    ### dev.sh dependencies
+    "tox",
+    "tox-uv",
     ## Formatting / Linting
     "validate-pyproject[all]",
     "black",
@@ -54,11 +52,10 @@ dev = [
     "mypy",
     ## Testing
     "pytest",
-    ## REPL
-    "bpython",
-]
-
-docs = [
+    ## Build
+    "setuptools",
+    "wheel",
+    ## Docs
     "black",
     "mkdocs",
     "mkdocs-material>=8.5",
@@ -70,5 +67,11 @@ docs = [
     "mike",
 ]
 
+[project.scripts]
+nserver = "nserver.__main__:main"
+
 [tool.setuptools.package-data]
 nserver = ["py.typed"]
+
+[tool.black]
+line-length = 100

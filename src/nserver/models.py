@@ -1,5 +1,8 @@
 ### IMPORTS
 ### ============================================================================
+## Future
+from __future__ import annotations
+
 ## Standard Library
 from typing import Optional, Union, List
 
@@ -37,7 +40,7 @@ class Query:  # pylint: disable=too-few-public-methods
         return
 
     @classmethod
-    def from_dns_question(cls, question: dnslib.DNSQuestion) -> "Query":
+    def from_dns_question(cls, question: dnslib.DNSQuestion) -> Query:
         """Create a new query from a `dnslib.DNSQuestion`"""
         if question.qtype not in dnslib.QTYPE.forward:
             raise ValueError(f"Invalid QTYPE: {question.qtype}")
@@ -106,14 +109,14 @@ class Response:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def get_answer_records(self) -> List[dnslib.RD]:
+    def get_answer_records(self) -> list[dnslib.RD]:
         """Prepare resource records for answer section"""
         return [record.to_resource_record() for record in self.answers]
 
-    def get_additional_records(self) -> List[dnslib.RD]:
+    def get_additional_records(self) -> list[dnslib.RD]:
         """Prepare resource records for additional section"""
         return [record.to_resource_record() for record in self.additional]
 
-    def get_authority_records(self) -> List[dnslib.RD]:
+    def get_authority_records(self) -> list[dnslib.RD]:
         """Prepare resource records for authority section"""
         return [record.to_resource_record() for record in self.authority]

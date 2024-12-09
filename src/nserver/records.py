@@ -2,10 +2,13 @@
 
 ### IMPORTS
 ### ============================================================================
+## Future
+from __future__ import annotations
+
 ## Standard Library
 from ipaddress import IPv4Address, IPv6Address
 import re
-from typing import Any, Union, Dict
+from typing import Any
 
 ## Installed
 import dnslib
@@ -36,7 +39,7 @@ class RecordBase:
         type_name = self.__class__.__name__
         self._qtype = getattr(dnslib.QTYPE, type_name)
         self._class = getattr(dnslib, type_name)  # class means python class not RR CLASS
-        self._record_kwargs: Dict[str, Any]
+        self._record_kwargs: dict[str, Any]
         is_unsigned_int_size(ttl, 32, throw_error=True, value_name="ttl")
         self.ttl = ttl
         self.resource_name = resource_name
@@ -56,7 +59,7 @@ class RecordBase:
 class A(RecordBase):  # pylint: disable=invalid-name
     """Ipv4 Address (`A`) Record."""
 
-    def __init__(self, resource_name: str, ip: Union[str, IPv4Address], ttl: int = 300) -> None:
+    def __init__(self, resource_name: str, ip: str | IPv4Address, ttl: int = 300) -> None:
         """
         Args:
             resource_name: DNS resource name
@@ -77,7 +80,7 @@ class A(RecordBase):  # pylint: disable=invalid-name
 class AAAA(RecordBase):
     """Ipv6 Address (`AAAA`) Record."""
 
-    def __init__(self, resource_name: str, ip: Union[str, IPv6Address], ttl: int = 300) -> None:
+    def __init__(self, resource_name: str, ip: str | IPv6Address, ttl: int = 300) -> None:
         """
         Args:
             resource_name: DNS resource name
@@ -222,7 +225,7 @@ class SOA(RecordBase):
         - https://en.wikipedia.org/wiki/SOA_record
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         zone_name: str,
         primary_name_server: str,

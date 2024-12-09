@@ -1,5 +1,8 @@
 ### IMPORTS
 ### ============================================================================
+## Future
+from __future__ import annotations
+
 ## Standard Library
 from collections import deque
 from dataclasses import dataclass
@@ -8,16 +11,15 @@ import selectors
 import socket
 import struct
 import time
+from typing import Deque, NewType, Any, cast
 
-# Note: Union can only be replaced with `X | Y` in 3.10+
-from typing import Tuple, Optional, Dict, List, Deque, NewType, Any, Union, cast
 
 ## Installed
 import dnslib
+from pillar.logging import LoggingMixin
 
 ## Application
 from .exceptions import InvalidMessageError
-from .settings import Settings
 
 
 ### CONSTANTS
@@ -48,7 +50,7 @@ CacheKey = NewType("CacheKey", str)
 
 ### FUNCTIONS
 ### ============================================================================
-def get_tcp_info(connection: socket.socket) -> Tuple:
+def get_tcp_info(connection: socket.socket) -> tuple:
     """Get `socket.TCP_INFO` from socket
 
     Args:
@@ -111,9 +113,9 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         raw_data: bytes,
-        transport: "TransportBase",
+        transport: TransportBase,
         transport_data: Any,
-        remote_client: Union[str, Tuple[str, int]],
+        remote_client: str | tuple[str, int],
     ):
         """Create new message container
 
@@ -148,7 +150,7 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
         self.transport = transport
         self.transport_data = transport_data
         self.remote_client = remote_client
-        self.response: Optional[dnslib.DNSRecord] = None
+        self.response: dnslib.DNSRecord | None = None
         return
 
     def get_response_bytes(self):
@@ -160,16 +162,11 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
 
 ## Transport Classes
 ## -----------------------------------------------------------------------------
-class TransportBase:
+class TransportBase(LoggingMixin):
     """Base class for all transports"""
 
-    def __init__(self, settings: Settings) -> None:
-        """
-        Args:
-            settings: settings of the server this transport is attached to
-        """
-        self.settings = settings
-        # TODO: setup logging
+    def __init__(self) -> None:
+        self.logger = self.get_logger()
         return
 
     def start_server(self, timeout: int = 60) -> None:
@@ -199,7 +196,7 @@ class UDPMessageData:
         remote_address: UDP peername that this message was received from
     """
 
-    remote_address: Tuple[str, int]
+    remote_address: tuple[str, int]
 
 
 class UDPv4Transport(TransportBase):
@@ -207,10 +204,10 @@ class UDPv4Transport(TransportBase):
 
     _SOCKET_AF = socket.AF_INET
 
-    def __init__(self, settings: Settings):
-        super().__init__(settings)
-        self.address = self.settings.server_address
-        self.port = self.settings.server_port
+    def __init__(self, address: str, port: int):
+        super().__init__()
+        self.address = address
+        self.port = port
         self.socket = socket.socket(self._SOCKET_AF, socket.SOCK_DGRAM)
         return
 
@@ -284,7 +281,7 @@ class CachedConnection:
     """
 
     connection: socket.socket
-    remote_address: Tuple[str, int]
+    remote_address: tuple[str, int]
     last_data_time: float
     selector_key: selectors.SelectorKey
     cache_key: CacheKey
@@ -306,17 +303,17 @@ class TCPv4Transport(TransportBase):
     CONNECTION_CACHE_TARGET = int(CONNECTION_CACHE_LIMIT * CONNECTION_CACHE_VACUUM_PERCENT)
     CONNECTION_CACHE_CLEAN_INTERVAL = 10  # seconds
 
-    def __init__(self, settings: Settings) -> None:
-        super().__init__(settings)
-        self.address = self.settings.server_address
-        self.port = self.settings.server_port
+    def __init__(self, address: str, port: int) -> None:
+        super().__init__()
+        self.address = address
+        self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setblocking(False)
         # Allow taking over of socket when in TIME_WAIT (i.e. previously released)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self.selector = selectors.DefaultSelector()
-        self.cached_connections: Dict[CacheKey, CachedConnection] = {}
+        self.cached_connections: dict[CacheKey, CachedConnection] = {}
         self.last_cache_clean = 0.0
         self.connection_queue: Deque[socket.socket] = deque()
 
@@ -380,8 +377,41 @@ class TCPv4Transport(TransportBase):
     def __repr__(self):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
 
-    def _get_next_connection(self) -> Tuple[socket.socket, Tuple[str, int]]:
-        """Get the next connection that is ready to receive data on."""
+    def _get_next_connection(self) -> tuple[socket.socket, tuple[str, int]]:
+        """Get the next connection that is ready to receive data on.
+
+        Blocks until a good connection is found
+        """
+        while True:
+            if not self.connection_queue:
+                self._populate_connection_queue()
+
+            # There is something in the queue - attempt to get it
+            connection = self.connection_queue.popleft()
+
+            if not self._connection_viable(connection):
+                self._remove_connection(connection)
+                continue
+
+            # Connection is probably viable
+            try:
+                remote_address = connection.getpeername()
+            except OSError as e:
+                if e.errno == 107:  # Transport endpoint is not connected
+                    self._remove_connection(connection)
+                    continue
+
+                raise  # Unknown OSError - raise it.
+
+            break  # we have a valid connection
+
+        return connection, remote_address
+
+    def _populate_connection_queue(self) -> None:
+        """Populate self.connection_queue
+
+        Blocks until there is at least on connection
+        """
         while not self.connection_queue:
             # loop until connection is ready for execution
             events = self.selector.select(self.SELECT_TIMEOUT)
@@ -413,13 +443,7 @@ class TCPv4Transport(TransportBase):
             # No connections ready, take advantage to do cleanup
             elif time.time() - self.last_cache_clean > self.CONNECTION_CACHE_CLEAN_INTERVAL:
                 self._cleanup_cached_connections()
-
-        # We have a connection in the queue
-        # print(f"connection_queue: {self.connection_queue}")
-        connection = self.connection_queue.popleft()
-        remote_address = connection.getpeername()
-
-        return connection, remote_address
+        return
 
     def _accept_connection(self) -> socket.socket:
         """Accept a connection, cache it, and add it to the selector"""
@@ -471,7 +495,7 @@ class TCPv4Transport(TransportBase):
     def _cleanup_cached_connections(self) -> None:
         "Cleanup cached connections"
         now = time.time()
-        cache_clear: List[CacheKey] = []
+        cache_clear: list[CacheKey] = []
         for cache_key, cache in self.cached_connections.items():
             if now - cache.last_data_time > self.CONNECTION_KEEPALIVE_LIMIT:
                 if cache.connection not in self.connection_queue:
@@ -485,7 +509,7 @@ class TCPv4Transport(TransportBase):
         for cache_key in cache_clear:
             self._remove_connection(cache_key=cache_key)
 
-        quiet_connections: List[CachedConnection] = []
+        quiet_connections: list[CachedConnection] = []
         cached_connections_len = len(self.cached_connections)
         cache_clear = []
 
@@ -516,7 +540,7 @@ class TCPv4Transport(TransportBase):
         return
 
     def _remove_connection(
-        self, connection: Optional[socket.socket] = None, cache_key: Optional[CacheKey] = None
+        self, connection: socket.socket | None = None, cache_key: CacheKey | None = None
     ) -> None:
         """Remove a connection from the server (closing it in the process)
 

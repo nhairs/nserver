@@ -19,9 +19,6 @@ server = NameServer("example")
 @server.rule("example.com", ["A"])
 def example_a_records(query: Query):
     return A(query.name, "1.2.3.4")
-
-if __name__ == "__main__":
-    server.run()
 ```
 
 Here's what this code does:
@@ -37,28 +34,25 @@ Here's what this code does:
 
 4. When triggered our function will then return a single `A` record as a response.
 
-5. Finally we add code so that we can run our server.
-
 ### Running our server
 
-With our server written we can now run it:
+With our server written we can now run it using the `nserver` CLI:
 
-```shell
-python3 example_server.py
+```bash
+nserver --server path/to/minimal_server.py
 ```
-
 ```{.none .no-copy}
-[INFO] Starting UDPv4Transport(address='localhost', port=9953)
+[INFO] Starting UDPv4Transport(address='localhost', port=5300)
 ```
 
 We can access it using `dig`.
 
 ```shell
-dig -p 9953 @localhost A example.com
+dig -p 5300 @localhost A example.com
 ```
 
 ```{.none .no-copy}
-; <<>> DiG 9.18.12-0ubuntu0.22.04.3-Ubuntu <<>> -p 9953 @localhost A example.com
+; <<>> DiG 9.18.12-0ubuntu0.22.04.3-Ubuntu <<>> -p 5300 @localhost A example.com
 ; (1 server found)
 ;; global options: +cmd
 ;; Got answer:
@@ -72,7 +66,7 @@ dig -p 9953 @localhost A example.com
 example.com.		300	IN	A	1.2.3.4
 
 ;; Query time: 324 msec
-;; SERVER: 127.0.0.1#9953(localhost) (UDP)
+;; SERVER: 127.0.0.1#5300(localhost) (UDP)
 ;; WHEN: Thu Nov 02 21:27:12 AEDT 2023
 ;; MSG SIZE  rcvd: 45
 ```

@@ -1,0 +1,41 @@
+name: Test NServer
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: "Python Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Lint with tox
+        run: uvx --with tox-uv tox -e lint
+
+  test:
+    name: "Python Test ${{ matrix.os }}"
+    needs: [lint]
+    runs-on: "${{ matrix.os }}"
+    strategy:
+      fail-fast: false  # allow tests to run on all platforms
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+
+      - name: Test with tox
+        run: uvx --with tox-uv tox

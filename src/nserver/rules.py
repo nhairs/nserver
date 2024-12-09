@@ -2,9 +2,12 @@
 
 ### IMPORTS
 ### ============================================================================
+## Future
+from __future__ import annotations
+
 ## Standard Library
 import re
-from typing import Callable, List, Optional, Pattern, Union, Type
+from typing import Callable, Pattern, Union, Type, List
 
 ## Installed
 import dnslib
@@ -16,7 +19,7 @@ from .records import RecordBase
 
 ### CONSTANTS
 ### ============================================================================
-ALL_QTYPES: List[str] = list(dnslib.QTYPE.reverse.keys())
+ALL_QTYPES: list[str] = list(dnslib.QTYPE.reverse.keys())
 """All supported Query Types
 
 New in `2.0`.
@@ -27,7 +30,33 @@ _wildcard_string_regex = re.compile(r"[*]|\{base_domain\}")
 
 ### FUNCTIONS
 ### ============================================================================
-def smart_make_rule(rule: "Union[Type[RuleBase], str, Pattern]", *args, **kwargs) -> "RuleBase":
+def coerce_to_response(result: RuleResult) -> Response:
+    """Convert some `RuleResult` to a `Response`
+
+    Args:
+        result: the results to convert
+
+    Raises:
+        TypeError: unsupported result type
+
+    New in `3.0`.
+    """
+    if isinstance(result, Response):
+        return result
+
+    if result is None:
+        return Response()
+
+    if isinstance(result, RecordBase) and result.__class__ is not RecordBase:
+        return Response(answers=result)
+
+    if isinstance(result, list) and all(isinstance(item, RecordBase) for item in result):
+        return Response(answers=result)
+
+    raise TypeError(f"Cannot process result: {result!r}")
+
+
+def smart_make_rule(rule: Union[Type[RuleBase], str, Pattern], *args, **kwargs) -> RuleBase:
     """Create a rule using shorthand notation.
 
     The exact type of rule returned depends on what is povided by `rule`.
@@ -76,7 +105,7 @@ Type Alias for functions that will be called when a rule is matched
 class RuleBase:
     """Base class for all Rules to inherit from."""
 
-    def get_func(self, query: Query) -> Optional[ResponseFunction]:
+    def get_func(self, query: Query) -> ResponseFunction | None:
         """From the given query return the function to run, if any.
 
         If no function should be run (i.e. because it does not match the rule),
@@ -99,7 +128,7 @@ class StaticRule(RuleBase):
     def __init__(
         self,
         match_string: str,
-        allowed_qtypes: List[str],
+        allowed_qtypes: list[str],
         func: ResponseFunction,
         case_sensitive: bool = False,
     ) -> None:
@@ -116,7 +145,7 @@ class StaticRule(RuleBase):
         self.case_sensitive = case_sensitive
         return
 
-    def get_func(self, query: Query) -> Optional[ResponseFunction]:
+    def get_func(self, query: Query) -> ResponseFunction | None:
         """Same as parent class"""
         if query.type not in self.allowed_qtypes:
             return None
@@ -147,7 +176,7 @@ class ZoneRule(RuleBase):
     def __init__(
         self,
         zone: str,
-        allowed_qtypes: List[str],
+        allowed_qtypes: list[str],
         func: ResponseFunction,
         case_sensitive: bool = False,
     ) -> None:
@@ -165,7 +194,7 @@ class ZoneRule(RuleBase):
         self.case_sensitive = case_sensitive
         return
 
-    def get_func(self, query: Query) -> Optional[ResponseFunction]:
+    def get_func(self, query: Query) -> ResponseFunction | None:
         """Same as parent class"""
         if self.allowed_qtypes is not None and query.type not in self.allowed_qtypes:
             return None
@@ -194,7 +223,7 @@ class RegexRule(RuleBase):
     def __init__(
         self,
         regex: Pattern,
-        allowed_qtypes: List[str],
+        allowed_qtypes: list[str],
         func: ResponseFunction,
         case_sensitive: bool = False,
     ) -> None:
@@ -219,7 +248,7 @@ class RegexRule(RuleBase):
         self.case_sensitive = case_sensitive
         return
 
-    def get_func(self, query: Query) -> Optional[ResponseFunction]:
+    def get_func(self, query: Query) -> ResponseFunction | None:
         """Same as parent class"""
         if query.type not in self.allowed_qtypes:
             return None
@@ -257,7 +286,7 @@ class WildcardStringRule(RuleBase):
     def __init__(
         self,
         wildcard_string: str,
-        allowed_qtypes: List,
+        allowed_qtypes: list,
         func: ResponseFunction,
         case_sensitive: bool = False,
     ) -> None:
@@ -274,7 +303,7 @@ class WildcardStringRule(RuleBase):
         self.case_sensitive = case_sensitive
         return
 
-    def get_func(self, query: Query) -> Optional[ResponseFunction]:
+    def get_func(self, query: Query) -> ResponseFunction | None:
         """Same as parent class"""
         if query.type not in self.allowed_qtypes:
             return None

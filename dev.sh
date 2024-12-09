@@ -15,11 +15,13 @@ set -e  # Bail at the first sign of trouble
 # Notation Reference: https://unix.stackexchange.com/questions/122845/using-a-b-for-variable-assignment-in-scripts#comment685330_122848
 : ${DEBUG:=0}
 : ${CI:=0}  # Flag for if we are in CI - default to not.
-: ${SKIP_BUILD:=0}  # Allow some commands to forcibly skip compose-build
-: ${PORT:=8000}  # allows for some commands to change the port
 
 if ! command -v toml &> /dev/null; then
     pip install --user toml-cli
+fi
+
+if ! command -v uv &> /dev/null; then
+    pip install --user uv
 fi
 
 ### CONTANTS
@@ -45,8 +47,7 @@ PACKAGE_VERSION=$(toml get --toml-path pyproject.toml project.version)
 # You may want to customise these for your project
 # TODO: this potentially should be moved to manifest.env so that projects can easily
 # customise the main dev.sh
-SOURCE_FILES="src tests"
-PYTHON_MIN_VERSION="py37"
+PYTHON_MIN_VERSION="py38"
 
 ## Build related
 ## -----------------------------------------------------------------------------
@@ -117,77 +118,6 @@ cp .tmp/env .env
 
 ### FUNCTIONS
 ### ============================================================================
-## Docker Functions
-## -----------------------------------------------------------------------------
-function compose_build {
-    heading2 "🐋 Building $1"
-    if [[ "$CI" = 1 ]]; then
-        docker compose build --progress plain $1
-
-    elif [[ "$DEBUG" -gt 0 ]]; then
-        docker compose build --progress plain $1
-
-    else
-        docker compose build $1
-    fi
-    echo
-}
-
-function compose_run {
-    heading2 "🐋 running $@"
-    docker compose -f docker-compose.yml run --rm "$@"
-    echo
-}
-
-function docker_clean {
-    heading2 "🐋 Removing $PACKAGE_NAME images"
-    IMAGES=$(docker images --filter "reference=${PACKAGE_NAME}-asdf*" | tail -n +2)
-    COUNT_IMAGES=$(echo -n "$IMAGES" | wc -l)
-    if [[ "$DEBUG" -gt 0 ]]; then
-        echo "IMAGES=$IMAGES"
-        echo "COUNT_IMAGES=$COUNT_IMAGES"
-    fi
-
-    if [[ "$COUNT_IMAGES" -gt 0 ]]; then
-        docker images | grep "$PACKAGE_NAME" | awk '{OFS=":"} {print $1, $2}' | xargs -t docker rmi
-    fi
-}
-
-
-function docker_clean_unused {
-    docker images --filter "reference=${PACKAGE_NAME}-*" -a | \
-        tail -n +2 | \
-        grep -v "$GIT_COMMIT" | \
-        awk '{OFS=":"} {print $1, $2}' | \
-        xargs -t docker rmi
-}
-
-function docker_autoclean {
-    if [[ "$CI" = 0 ]]; then
-        if [[ "$DEBUG" -gt 0 ]]; then
-            heading2 "🐋 determining if need to clean"
-        fi
-
-        IMAGES=$(
-            docker images --filter "reference=${PACKAGE_NAME}-*" -a |\
-            tail -n +2 |\
-            grep -v "$GIT_COMMIT" ;\
-            /bin/true
-        )
-        COUNT_IMAGES=$(echo "$IMAGES" | wc -l)
-
-        if [[ "$DEBUG" -gt 0 ]]; then
-            echo "IMAGES=${IMAGES}"
-            echo "COUNT_IMAGES=${COUNT_IMAGES}"
-        fi
-
-        if [[ $COUNT_IMAGES -gt $AUTOCLEAN_LIMIT ]]; then
-            heading2 "Removing unused ${PACKAGE_NAME} images 🐋"
-            docker_clean_unused
-        fi
-    fi
-}
-
 ## Utility
 ## -----------------------------------------------------------------------------
 function heading {
@@ -228,32 +158,6 @@ function check_pyproject_toml {
 
 ## Command Functions
 ## -----------------------------------------------------------------------------
-function command_build {
-    if [[ -z "$1" || "$1" == "dist" ]]; then
-        BUILD_DIR="dist"
-    elif [[ "$1" == "tmp" ]]; then
-        BUILD_DIR=".tmp/dist"
-    else
-        return 1
-    fi
-
-    # TODO: unstashed changed guard
-
-    if [[ ! -d "$BUILD_DIR" ]]; then
-        heading "setup 📜"
-        mkdir $BUILD_DIR
-    fi
-
-    echo "BUILD_DIR=${BUILD_DIR}" >> .env
-    echo "BUILD_DIR=${BUILD_DIR}" >> .tmp/env
-
-    heading "build 🐍"
-    # Note: we always run compose_build because we copy the package source code to
-    # the container so we can modify it without affecting local source code.
-    compose_build python-build
-    compose_run python-build
-}
-
 
 function display_usage {
     echo "dev.sh - development utility"
@@ -306,70 +210,30 @@ case $1 in
             echo "ERROR! Do not run format in CI!"
             exit 250
         fi
-        heading "black 🐍"
-        if [[ "$SKIP_BUILD" = 0 ]]; then
-            compose_build python-common
-        fi
-
-        compose_run python-common \
-            black --line-length 100 --target-version ${PYTHON_MIN_VERSION} $SOURCE_FILES
+        heading "tox 🐍 - format"
+        uvx tox -e format || true
 
         ;;
 
     "lint")
-        if [[ "$SKIP_BUILD" = 0 ]]; then
-            compose_build python-common
-        fi
-
-        if [[ "$DEBUG" -gt 0 ]]; then
-            heading2 "🤔 Debugging"
-            compose_run python-common ls -lah
-            compose_run python-common pip list
-        fi
-
-        heading "validate-pyproject 🐍"
-        compose_run python-common validate-pyproject pyproject.toml
-
-        heading "black - check only 🐍"
-        compose_run python-common \
-            black --line-length 100 --target-version ${PYTHON_MIN_VERSION} --check --diff $SOURCE_FILES
-
-        heading "pylint 🐍"
-        compose_run python-common pylint -j 4 --output-format=colorized $SOURCE_FILES
-
-        heading "mypy 🐍"
-        compose_run python-common mypy $SOURCE_FILES
-
+        heading "tox 🐍 - lint"
+        uvx tox -e lint || true
         ;;
 
     "test")
-        command_build tmp
-
-        heading "tox 🐍"
-        if [[ "$SKIP_BUILD" = 0 ]]; then
-            compose_build python-tox
-        fi
-        compose_run python-tox tox -e ${PYTHON_MIN_VERSION} || true
-
-        rm -rf .tmp/dist/*
+        heading "tox 🐍 - single"
+        uvx tox -e py312 || true
 
         ;;
 
     "test-full")
-        command_build tmp
-
-        heading "tox 🐍"
-        if [[ "$SKIP_BUILD" = 0 ]]; then
-            compose_build python-tox
-        fi
-        compose_run python-tox tox || true
-
-        rm -rf .tmp/dist/*
+        heading "tox 🐍 - all"
+        uvx tox || true
 
         ;;
 
     "build")
-        command_build dist
+        source ./lib/python/build.sh
 
         ;;
 
@@ -408,44 +272,20 @@ print('Your package is already imported 🎉\nPress ctrl+d to exit')
 EOF
         fi
 
-        if [[ "$SKIP_BUILD" = 0 ]]; then
-            compose_build python-common
-        fi
-        compose_run python-common bpython --config bpython.ini -i .tmp/repl.py
-
-        ;;
-
-    "run")
-        heading "Running 🐍"
-        if [[ "$SKIP_BUILD" = 0 ]]; then
-            compose_build python-common
-        fi
-        compose_run python-common "${@:2}"
+        uv run python -i .tmp/repl.py
 
         ;;
 
     "docs")
         heading "Preview Docs 🐍"
-        if [[ "$SKIP_BUILD" = 0 ]]; then
-            compose_build python-common
-        fi
-        compose_run -p 127.0.0.1:${PORT}:8080 python-common mkdocs serve -a 0.0.0.0:8080 -w docs
+        uv run --extra dev mkdocs serve -w docs
 
         ;;
 
     "build-docs")
         heading "Building Docs 🐍"
 
-        if [[ -z "$VIRTUAL_ENV" ]]; then
-            echo "This command should be run in a virtual environment to avoid poluting"
-            exit 1
-        fi
-
-        if [[ -z $(pip3 list | grep mike) ]]; then
-            pip install -e.[docs]
-        fi
-
-        mike deploy "$PACKAGE_VERSION" "latest" \
+        uv run --extra dev mike deploy "$PACKAGE_VERSION" "latest" \
             --update-aliases \
             --prop-set-string "git_branch=${GIT_BRANCH}" \
             --prop-set-string "git_commit=${GIT_COMMIT}" \
@@ -462,7 +302,6 @@ EOF
 
     "clean")
         heading "Cleaning 📜"
-        docker_clean
 
         echo "🐍 pyclean"
         if ! command -v pyclean &> /dev/null; then
@@ -470,6 +309,9 @@ EOF
         fi
         pyclean src
         pyclean tests
+
+        echo "🐍 clear .tox"
+        rm -rf .tox
 
         echo "🐍 remove build artifacts"
         rm -rf build dist "src/${PACKAGE_PYTHON_NAME}.egg-info"
@@ -523,5 +365,3 @@ EOF
 
         ;;
 esac
-
-docker_autoclean

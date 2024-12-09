@@ -47,22 +47,7 @@ replace_version_var BUILD_DATETIME "${BUILD_DATETIME}" 0
 
 head -n 22 "src/${PACKAGE_PYTHON_NAME}/_version.py" | tail -n 7
 
-if [ "$PYTHON_PACKAGE_REPOSITORY" == "testpypi" ]; then
-    echo "MODIFYING PACKAGE_NAME"
-    # Replace name suitable for test.pypi.org
-    # https://packaging.python.org/tutorials/packaging-projects/#creating-setup-py
-    sed -i "s/^PACKAGE_NAME = .*/PACKAGE_NAME = \"${PACKAGE_NAME}-${TESTPYPI_USERNAME}\"/" setup.py
-    grep "^PACKAGE_NAME = " setup.py
-
-    mv "src/${PACKAGE_PYTHON_NAME}" "src/${PACKAGE_PYTHON_NAME}_$(echo -n $TESTPYPI_USERNAME | tr '-' '_')"
-fi
-
-if [[ "$GIT_BRANCH" != "master" && "$GIT_BRANCH" != "main" ]]; then
-    sed -i "s/^PACKAGE_VERSION = .*/PACKAGE_VERSION = \"${BUILD_VERSION}\"/" setup.py
-    grep "^PACKAGE_VERSION = " setup.py
-fi
-
 ## Build
 ## -----------------------------------------------------------------------------
-#python3 setup.py bdist_wheel
-python3 -m build --wheel
+uv build
+git restore src/${PACKAGE_PYTHON_NAME}/_version.py
