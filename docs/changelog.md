@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [3.0.0](https://github.com/nhairs/nserver/compare/v2.0.0...dev) - UNRELEASED
+## [3.0.0](https://github.com/nhairs/nserver/compare/v2.0.0...v3.0.0) - 2025-07-11
 
 !!! tip
     Version `3.0.0` represents a large incompatible refactor of `nserver` with version `2.0.0` considered a ["misfire"](https://github.com/nhairs/nserver/pull/4#issuecomment-2254354192). If you have been using functionality from `2.0.0` or the development branch you should expect a large number of breaking changes.
