@@ -86,6 +86,13 @@ class CliApplication(pillar.application.Application):
             dest="transport",
             help="Use TCPv4 socket for transport.",
         )
+        transport_group.add_argument(
+            "--tcp6",
+            action="store_const",
+            const=transport.TCPv6Transport,
+            dest="transport",
+            help="Use TCPv6 socket for transport.",
+        )
 
         parser.set_defaults(transport=transport.UDPv4Transport)
         return parser

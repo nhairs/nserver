@@ -296,6 +296,8 @@ class TCPv4Transport(TransportBase):
 
     # pylint: disable=too-many-instance-attributes
 
+    _SOCKET_AF = socket.AF_INET
+
     SELECT_TIMEOUT = 0.1
     CONNECTION_KEEPALIVE_LIMIT = 30  # seconds
     CONNECTION_CACHE_LIMIT = 200
@@ -307,7 +309,7 @@ class TCPv4Transport(TransportBase):
         super().__init__()
         self.address = address
         self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = socket.socket(self._SOCKET_AF, socket.SOCK_STREAM)
         self.socket.setblocking(False)
         # Allow taking over of socket when in TIME_WAIT (i.e. previously released)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -584,3 +586,9 @@ class TCPv4Transport(TransportBase):
                     raise e
         connection.close()
         return
+
+
+class TCPv6Transport(TCPv4Transport):
+    """Transport class for IPv6 TCP."""
+
+    _SOCKET_AF = socket.AF_INET6
