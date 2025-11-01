@@ -109,6 +109,10 @@ class CliApplication(pillar.application.Application):
 
     def get_server(self) -> NameServer | RawNameServer:
         """Factory for getting the server to run based on current settings"""
+        if ":" not in self.args.server:
+            raise ValueError(
+                "--server must be in the format of `module:attribute` e.g. `example/app.py:my_server`"
+            )
         module_path, attribute_path = self.args.server.split(":")
 
         obj: object

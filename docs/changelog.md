@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add `TCPv6Transport` which can be enabled using the `--tcp6` CLI argument.
+- Better error message when providing incorrect `--server` argument [#10](https://github.com/nhairs/nserver/issues/10)
 
 ## [3.0.2](https://github.com/nhairs/nserver/compare/v3.0.1...v3.0.2) - 2025-08-15
 

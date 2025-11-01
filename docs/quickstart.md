@@ -39,7 +39,7 @@ Here's what this code does:
 With our server written we can now run it using the `nserver` CLI:
 
 ```bash
-nserver --server path/to/minimal_server.py
+nserver --server path/to/minimal_server.py:server
 ```
 ```{.none .no-copy}
 [INFO] Starting UDPv4Transport(address='localhost', port=5300)
