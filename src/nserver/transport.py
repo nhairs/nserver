@@ -13,7 +13,6 @@ import struct
 import time
 from typing import Deque, NewType, Any, cast
 
-
 ## Installed
 import dnslib
 from pillar.logging import LoggingMixin
