@@ -4,11 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.0](https://github.com/nhairs/nserver/compare/v3.0.2...v3.1.0) - UNRELEASED
+## [3.1.0](https://github.com/nhairs/nserver/compare/v3.0.2...v3.1.0) - 2026-03-01
 
 ### Added
 - Add `TCPv6Transport` which can be enabled using the `--tcp6` CLI argument.
 - Better error message when providing incorrect `--server` argument [#10](https://github.com/nhairs/nserver/issues/10)
+
+### Fixed
+- `LoggingManifest.additional_manifest` throws `TypeError` in `Application._setup_logging` on Python 3.14. See [nhairs/pillar #1](https://github.com/nhairs/pillar/issues/1).
 
 ## [3.0.2](https://github.com/nhairs/nserver/compare/v3.0.1...v3.0.2) - 2025-08-15
 
