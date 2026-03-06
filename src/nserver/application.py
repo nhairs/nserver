@@ -218,16 +218,18 @@ class ThreadsApplication(BaseApplication):
         self.debug("Joining receive_thread")
         self.receive_thread.join()
 
-        self.debug("Shutting down recvieve_queue")
-        self.receive_queue.shutdown()
+        # TODO: queue.Queue.shutdown available in 3.13+
+        # self.debug("Shutting down recvieve_queue")
+        # self.receive_queue.shutdown()
 
         self.debug("Joining worker_threads")
         # map(lambda t: t.join(), self.worker_threads)
         for t in self.worker_threads:
             t.join()
 
-        self.debug("Shutting down send_queue")
-        self.send_queue.shutdown()
+        # TODO: queue.Queue.shutdown available in 3.13+
+        # self.debug("Shutting down send_queue")
+        # self.send_queue.shutdown()
 
         self.debug("Joining send_thread")
         self.send_thread.join()
@@ -275,13 +277,18 @@ class ThreadsApplication(BaseApplication):
                 self.receive_queue.task_done()
 
             except queue.Empty:
+                # No work and shutting down
+                if self.shutdown_server:
+                    self.debug("work-loop: shutting down")
+                    break
                 # No work
                 continue
 
-            except queue.ShutDown:
-                # Queue empty and no more work
-                self.debug("work-loop: shutting down")
-                break
+            # TODO: queue.Queue.shutdown available in 3.13+
+            # except queue.ShutDown:
+            #     # Queue empty and no more work
+            #     self.debug("work-loop: shutting down")
+            #     break
 
             except Exception as e:  # pylint: disable=broad-except
                 self.error(f"work-loop: uncaught error occured. {e}", exc_info=e)
@@ -302,13 +309,18 @@ class ThreadsApplication(BaseApplication):
                 self.send_queue.task_done()
 
             except queue.Empty:
+                # No work and shutting down
+                if self.shutdown_server:
+                    self.debug("send-loop: shutting down")
+                    break
                 # No work
                 continue
 
-            except queue.ShutDown:
-                # Queue empty and no more work
-                self.debug("send-loop: shutting down")
-                break
+            # TODO: queue.Queue.shutdown available in 3.13+
+            # except queue.ShutDown:
+            #     # Queue empty and no more work
+            #     self.debug("send-loop: shutting down")
+            #     break
 
             except Exception as e:  # pylint: disable=broad-except
                 self.error(f"send-loop: uncaught error occured. {e}", exc_info=e)
