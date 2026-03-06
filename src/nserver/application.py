@@ -9,7 +9,7 @@ import os
 import queue
 import threading
 import time
-from typing import Optional, cast
+from typing import Optional
 
 ## Installed
 from pillar.logging import LoggingMixin
@@ -140,7 +140,7 @@ class ThreadsApplication(BaseApplication):
         super().__init__(server)
         self.transport = transport
         self.workers = (
-            max(workers, 1) if workers is not None else min(max(os.cpu_count() - 2, 1), 16)
+            max(workers, 1) if workers is not None else min(max(os.cpu_count() - 2, 1), 16)  # type: ignore[operator]
         )
         self.error_count = 0
         self.error_count_lock = threading.Lock()
@@ -148,12 +148,12 @@ class ThreadsApplication(BaseApplication):
         self.shutdown_server = False
 
         self.receive_thread = threading.Thread(target=self.receive_loop, name="nserver-recv")
-        self.receive_queue = queue.Queue(self.QUEUE_MAX_SIZE)
+        self.receive_queue: queue.Queue[MessageContainer] = queue.Queue(self.QUEUE_MAX_SIZE)
         self.worker_threads = [
             threading.Thread(target=self.worker_loop, name=f"nserver-worker-{i}")
             for i in range(self.workers)
         ]
-        self.send_queue = queue.Queue(self.QUEUE_MAX_SIZE)
+        self.send_queue: queue.Queue[MessageContainer] = queue.Queue(self.QUEUE_MAX_SIZE)
         self.send_thread = threading.Thread(target=self.send_loop, name="nserver-send")
         return
 
@@ -239,7 +239,7 @@ class ThreadsApplication(BaseApplication):
         while True:
             try:
                 self.debug("worker attempting to receive message")
-                message = cast(MessageContainer, self.receive_queue.get(True, 1))
+                message = self.receive_queue.get(True, 1)
                 self.debug(f"worker received message {message}")
                 message.response = self.server.process_request(message.message)
                 self.send_queue.put(message)
@@ -262,7 +262,7 @@ class ThreadsApplication(BaseApplication):
         """Send a processed message"""
         while True:
             try:
-                message = cast(MessageContainer, self.send_queue.get(True, 1))
+                message = self.send_queue.get(True, 1)
                 self.transport.send_message_response(message)
                 self.send_queue.task_done()
 

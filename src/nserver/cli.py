@@ -157,6 +157,7 @@ class CliApplication(pillar.application.Application):
 
     def get_application(self) -> nserver.application.BaseApplication:
         """Factory for getting the application based on current settings"""
+        application: nserver.application.BaseApplication
         if self.args.application == "direct":
             application = nserver.application.DirectApplication(
                 self.server,
