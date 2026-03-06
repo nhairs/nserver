@@ -11,7 +11,7 @@ import selectors
 import socket
 import struct
 import time
-from typing import Deque, NewType, Any, cast
+from typing import Deque, Optional, NewType, Any, cast
 
 ## Installed
 import dnslib
@@ -159,7 +159,7 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
         return self.response.pack()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(message={self.message!r}, transport={self.transport}, remote_client={self.remote_client})"
+        return f"{self.__class__.__name__}(message={self.message!r}, response={self.response!r}, transport={self.transport}, remote_client={self.remote_client})"
 
 
 ## Transport Classes
@@ -167,11 +167,13 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
 class TransportBase(LoggingMixin):
     """Base class for all transports"""
 
-    def __init__(self) -> None:
+    def __init__(self, *, start_timeout: int = 60, receive_timeout: int = 5) -> None:
         self.logger = self.get_logger()
+        self.start_timeout = start_timeout
+        self.receive_timeout = receive_timeout
         return
 
-    def start_server(self, timeout: int = 60) -> None:
+    def start_server(self) -> None:
         """Start transport's server"""
         raise NotImplementedError()
 
@@ -179,7 +181,7 @@ class TransportBase(LoggingMixin):
         """Stop transport's server"""
         raise NotImplementedError()
 
-    def receive_message(self) -> MessageContainer:
+    def receive_message(self) -> Optional[MessageContainer]:
         """Receive a message from the running server"""
         raise NotImplementedError()
 
@@ -206,17 +208,18 @@ class UDPv4Transport(TransportBase):
 
     _SOCKET_AF = socket.AF_INET
 
-    def __init__(self, address: str, port: int):
-        super().__init__()
+    def __init__(self, address: str, port: int, **kwargs):
+        super().__init__(**kwargs)
         self.address = address
         self.port = port
         self.socket = socket.socket(self._SOCKET_AF, socket.SOCK_DGRAM)
+        self.socket.settimeout(self.receive_timeout)
         return
 
-    def start_server(self, timeout=60) -> None:
+    def start_server(self) -> None:
         """As per parent class"""
         start_time = time.time()
-        while (time.time() - start_time) < timeout:
+        while (time.time() - start_time) < self.start_timeout:
             try:
                 self.socket.bind((self.address, self.port))
                 break
@@ -227,19 +230,28 @@ class UDPv4Transport(TransportBase):
                     continue
                 raise e
         else:
-            raise RuntimeError(f"Failed to bind server after {timeout} seconds")
+            raise RuntimeError(
+                f"Failed to bind server to {self.address}:{self.port} after {self.start_timeout} seconds"
+            )
         return
 
-    def receive_message(self) -> MessageContainer:
+    def receive_message(self) -> Optional[MessageContainer]:
         """As per parent class"""
-        data, remote_address = self.socket.recvfrom(512)
+        try:
+            data, remote_address = self.socket.recvfrom(512)
+        except TimeoutError:
+            return None
+
         message = MessageContainer(data, self, UDPMessageData(remote_address), remote_address)
         return message
 
     def send_message_response(self, message: MessageContainer) -> None:
         """As per parent class"""
         data = message.get_response_bytes()
-        self.socket.sendto(data, message.transport_data.remote_address)
+        try:
+            self.socket.sendto(data, message.transport_data.remote_address)
+        except TimeoutError:
+            pass
         return
 
     def stop_server(self) -> None:
@@ -307,8 +319,8 @@ class TCPv4Transport(TransportBase):
     CONNECTION_CACHE_TARGET = int(CONNECTION_CACHE_LIMIT * CONNECTION_CACHE_VACUUM_PERCENT)
     CONNECTION_CACHE_CLEAN_INTERVAL = 10  # seconds
 
-    def __init__(self, address: str, port: int) -> None:
-        super().__init__()
+    def __init__(self, address: str, port: int, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.address = address
         self.port = port
         self.socket = socket.socket(self._SOCKET_AF, socket.SOCK_STREAM)
@@ -324,10 +336,10 @@ class TCPv4Transport(TransportBase):
         self.socket_selector_key = self.selector.register(self.socket, selectors.EVENT_READ)
         return
 
-    def start_server(self, timeout: int = 60) -> None:
+    def start_server(self) -> None:
         """As per parent class"""
         start_time = time.time()
-        while (time.time() - start_time) < timeout:
+        while (time.time() - start_time) < self.start_timeout:
             try:
                 self.socket.bind((self.address, self.port))
                 break
@@ -338,14 +350,19 @@ class TCPv4Transport(TransportBase):
                     continue
                 raise e
         else:
-            raise RuntimeError(f"Failed to bind server to {self.port} after {timeout} seconds")
+            raise RuntimeError(
+                f"Failed to bind server to {self.address}:{self.port} after {self.start_timeout} seconds"
+            )
         self.socket.listen()
         self.last_cache_clean = time.time()  # avoid immediately trying to cleaning the cache
         return
 
-    def receive_message(self) -> MessageContainer:
+    def receive_message(self) -> Optional[MessageContainer]:
         """As per parent class"""
-        connection, remote_address = self._get_next_connection()
+        next_connection = self._get_next_connection()
+        if next_connection is None:
+            return None
+        connection, remote_address = next_connection
         packed_length = recv_data(2, connection)
 
         data_length = struct.unpack("!H", packed_length)[0]
@@ -381,14 +398,20 @@ class TCPv4Transport(TransportBase):
     def __repr__(self):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
 
-    def _get_next_connection(self) -> tuple[socket.socket, tuple[str, int]]:
+    def _get_next_connection(self) -> Optional[tuple[socket.socket, tuple[str, int]]]:
         """Get the next connection that is ready to receive data on.
 
-        Blocks until a good connection is found
+        Changed in `3.2`: no longer blocks forever
         """
+        start_time = time.time()
         while True:
+            if (time.time() - start_time) > self.receive_timeout:
+                return None
+
             if not self.connection_queue:
                 self._populate_connection_queue()
+                # connection_queue may still be empty, restart loop from the top
+                continue
 
             # There is something in the queue - attempt to get it
             connection = self.connection_queue.popleft()
@@ -412,41 +435,39 @@ class TCPv4Transport(TransportBase):
         return connection, remote_address
 
     def _populate_connection_queue(self) -> None:
-        """Populate self.connection_queue
+        """Populate self.connection_queue (also run cleanup if nothing in queue)
 
-        Blocks until there is at least on connection
+        Changed in `3.2`: is now non-blocking.
         """
-        while not self.connection_queue:
-            # loop until connection is ready for execution
-            events = self.selector.select(self.SELECT_TIMEOUT)
-            if events:
-                # print(f"Got new events: {events}")
-                for key, _ in events:
-                    if key.fileobj is self.socket:
-                        # new connection on listening socket
-                        connection = self._accept_connection()
-                        # print(
-                        #     f"New connection: id={id(connection)} state={get_tcp_state(connection).name}"
-                        # )
-                        # TODO: determine if new connection goes into the connection_queue or not
-                    else:
-                        # This is a remote socket
-                        # cast as we known this is a socket.socket
-                        connection = cast(socket.socket, key.fileobj)
+        events = self.selector.select(self.SELECT_TIMEOUT)
+        if events:
+            # print(f"Got new events: {events}")
+            for key, _ in events:
+                if key.fileobj is self.socket:
+                    # new connection on listening socket
+                    connection = self._accept_connection()
+                    # print(
+                    #     f"New connection: id={id(connection)} state={get_tcp_state(connection).name}"
+                    # )
+                    # TODO: determine if new connection goes into the connection_queue or not
+                else:
+                    # This is a remote socket
+                    # cast as we known this is a socket.socket
+                    connection = cast(socket.socket, key.fileobj)
 
-                        if not self._connection_viable(connection):
-                            # Connection not good, remove it
-                            self._remove_connection(connection)
-                            continue
+                    if not self._connection_viable(connection):
+                        # Connection not good, remove it
+                        self._remove_connection(connection)
+                        continue
 
-                        # Connection is viable, update it and add it to connection queue
-                        cache_key = self._get_cache_key(connection)
-                        self.connection_queue.append(connection)
-                        self.cached_connections[cache_key].last_data_time = time.time()
+                    # Connection is viable, update it and add it to connection queue
+                    cache_key = self._get_cache_key(connection)
+                    self.connection_queue.append(connection)
+                    self.cached_connections[cache_key].last_data_time = time.time()
 
-            # No connections ready, take advantage to do cleanup
-            elif time.time() - self.last_cache_clean > self.CONNECTION_CACHE_CLEAN_INTERVAL:
-                self._cleanup_cached_connections()
+        # No connections ready, take advantage to do cleanup
+        elif time.time() - self.last_cache_clean > self.CONNECTION_CACHE_CLEAN_INTERVAL:
+            self._cleanup_cached_connections()
         return
 
     def _accept_connection(self) -> socket.socket:

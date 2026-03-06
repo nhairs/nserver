@@ -94,6 +94,8 @@ class DirectApplication(BaseApplication):
 
             try:
                 message = self.transport.receive_message()
+                if message is None:
+                    continue
                 message.response = self.server.process_request(message.message)
                 self.transport.send_message_response(message)
 
@@ -173,12 +175,19 @@ class ThreadsApplication(BaseApplication):
 
         self.info(f"Starting {self!r}...")
         try:
+            self.debug("Starting transport")
             self.transport.start_server()
+
+            self.debug("Starting recvieve_thread")
             self.receive_thread.start()
+
+            self.debug("Starting worker_threads")
             # map(lambda t: t.start(), self.worker_threads)
             for t in self.worker_threads:
                 t.start()
-            self.debug(f"worker threads: {self.worker_threads}")
+            self.vdebug(f"worker threads: {self.worker_threads}")
+
+            self.debug("Starting send_thread")
             self.send_thread.start()
 
         except Exception as e:  # pylint: disable=broad-except
@@ -206,41 +215,61 @@ class ThreadsApplication(BaseApplication):
 
         # Stop Server
         self.info("Shutting down Application...")
+        self.debug("Joining receive_thread")
         self.receive_thread.join()
+
+        self.debug("Shutting down recvieve_queue")
         self.receive_queue.shutdown()
+
+        self.debug("Joining worker_threads")
         # map(lambda t: t.join(), self.worker_threads)
         for t in self.worker_threads:
             t.join()
+
+        self.debug("Shutting down send_queue")
         self.send_queue.shutdown()
+
+        self.debug("Joining send_thread")
         self.send_thread.join()
+
+        self.debug("Stopping transport")
         self.transport.stop_server()
+
         self.info("Application has shutdown.")
 
         return self.exit_code
 
     def receive_loop(self) -> None:
         """Receive messages from the transport and send them to the worker threads"""
+        self.debug("recv-loop: starting")
         while not self.shutdown_server:
             try:
-                self.debug("attempting to receive message")
+                self.vvdebug("recv-loop: attempting to receive message")
                 message = self.transport.receive_message()
-                self.debug(f"message received {message}")
+                if message is None:
+                    continue
+                self.vdebug(f"recv-loop: message received {message}")
                 self.receive_queue.put(message)
 
             except InvalidMessageError as e:
-                self.warning(f"Skipping invalid message: {e}")
+                self.warning(f"recv-loop: Skipping invalid message: {e}")
 
             except Exception as e:  # pylint: disable=broad-except
-                self.handle_uncaught_error(e)
+                self.error(f"recv-loop: uncaught error occured. {e}", exc_info=e)
+                with self.error_count_lock:
+                    self.error_count += 1
+
+        self.debug("recv-loop: shutting down")
         return
 
     def worker_loop(self) -> None:
         """Process a message using the server and send to the send thread"""
+        self.debug("work-loop: starting")
         while True:
             try:
-                self.debug("worker attempting to receive message")
+                self.vvdebug("work-loop: attempting to receive message")
                 message = self.receive_queue.get(True, 1)
-                self.debug(f"worker received message {message}")
+                self.vdebug(f"work-loop: received message {message}")
                 message.response = self.server.process_request(message.message)
                 self.send_queue.put(message)
                 self.receive_queue.task_done()
@@ -251,18 +280,24 @@ class ThreadsApplication(BaseApplication):
 
             except queue.ShutDown:
                 # Queue empty and no more work
+                self.debug("work-loop: shutting down")
                 break
 
             except Exception as e:  # pylint: disable=broad-except
-                self.handle_uncaught_error(e)
+                self.error(f"work-loop: uncaught error occured. {e}", exc_info=e)
+                with self.error_count_lock:
+                    self.error_count += 1
                 self.receive_queue.task_done()
         return
 
     def send_loop(self) -> None:
         """Send a processed message"""
+        self.debug("send-loop: starting")
         while True:
             try:
+                self.vvdebug("send-loop: attempting to receive message")
                 message = self.send_queue.get(True, 1)
+                self.vdebug(f"send-loop: received message {message}")
                 self.transport.send_message_response(message)
                 self.send_queue.task_done()
 
@@ -272,18 +307,14 @@ class ThreadsApplication(BaseApplication):
 
             except queue.ShutDown:
                 # Queue empty and no more work
+                self.debug("send-loop: shutting down")
                 break
 
             except Exception as e:  # pylint: disable=broad-except
-                self.handle_uncaught_error(e)
+                self.error(f"send-loop: uncaught error occured. {e}", exc_info=e)
+                with self.error_count_lock:
+                    self.error_count += 1
                 self.send_queue.task_done()
-        return
-
-    def handle_uncaught_error(self, e: Exception) -> None:
-        """Handle uncaught errors from the application, transport, and server."""
-        self.error(f"Uncaught error occured. {e}", exc_info=e)
-        with self.error_count_lock:
-            self.error_count += 1
         return
 
 
@@ -370,6 +401,8 @@ class ThreadPoolApplication(BaseApplication):
         while not self.shutdown_server:
             try:
                 message = self.transport.receive_message()
+                if message is None:
+                    continue
                 self.thread_pool.submit(self.process_message, message)
 
             except InvalidMessageError as e:
@@ -423,6 +456,8 @@ class ThreadPoolApplication(BaseApplication):
 
             try:
                 message = self.transport.receive_message()
+                if message is None:
+                    continue
                 self.thread_pool.submit(self.process_message, message)
 
             except InvalidMessageError as e:
