@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.2.0](https://github.com/nhairs/nserver/compare/v3.1.0...v3.2.0) - UNRELEASED
 
+### Added
+- Add `--application` argument to the CLI, which selects the underlying application. Default application is unchanged (`DirectApplication`).
+- `ThreadsApplication` that processes requests using worker threads.
+  - Access on the CLI using `--application=threads`.
+  - Number of worker threads can be controlled through the CLI using`--workers`.
+- `ThreadPoolApplication` that processes requests using a threadpool.
+  - Access on the CLI using `--application=threadpool`.
+  - Number of threads can be controlled through the CLI using`--workers`.
+
+### Change
+- Improve log messages when starting and stopping an Application.
+
 ### Removed
 - Support for Python 3.8 and 3.9
 

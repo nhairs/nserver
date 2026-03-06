@@ -13,10 +13,11 @@ import pydoc
 import pillar.application
 
 ## Application
+import nserver.application
+
 from . import transport
 from . import _version
 
-from .application import BaseApplication, DirectApplication
 from .server import NameServer, RawNameServer
 
 
@@ -34,6 +35,24 @@ class CliApplication(pillar.application.Application):
 
     def get_argument_parser(self) -> argparse.ArgumentParser:
         parser = super().get_argument_parser()
+
+        ## Application
+        ## ---------------------------------------------------------------------
+        parser.add_argument(
+            "--application",
+            action="store",
+            choices=["direct", "threads", "threadpool"],
+            default="direct",
+            help="Application type to use when running the server",
+        )
+
+        parser.add_argument(
+            "--workers",
+            action="store",
+            type=int,
+            default=None,
+            help="Max number of worker threads to use. Only  used when --application=[threads,threadpool]",
+        )
 
         ## Server
         ## ---------------------------------------------------------------------
@@ -136,10 +155,25 @@ class CliApplication(pillar.application.Application):
 
         raise TypeError(f"Imported factory ({obj}) did not return a server ({server})")
 
-    def get_application(self) -> BaseApplication:
+    def get_application(self) -> nserver.application.BaseApplication:
         """Factory for getting the application based on current settings"""
-        application = DirectApplication(
-            self.server,
-            self.args.transport(self.args.host, self.args.port),
-        )
+        if self.args.application == "direct":
+            application = nserver.application.DirectApplication(
+                self.server,
+                self.args.transport(self.args.host, self.args.port),
+            )
+        elif self.args.application == "threads":
+            application = nserver.application.ThreadsApplication(
+                self.server,
+                self.args.transport(self.args.host, self.args.port),
+                self.args.workers,
+            )
+        elif self.args.application == "threadpool":
+            application = nserver.application.ThreadPoolApplication(
+                self.server,
+                self.args.transport(self.args.host, self.args.port),
+                self.args.workers,
+            )
+        else:
+            raise NotImplementedError()
         return application

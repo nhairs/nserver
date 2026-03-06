@@ -158,6 +158,9 @@ class MessageContainer:  # pylint: disable=too-few-public-methods
             raise AttributeError("response not set!")
         return self.response.pack()
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(message={self.message!r}, transport={self.transport}, remote_client={self.remote_client})"
+
 
 ## Transport Classes
 ## -----------------------------------------------------------------------------
