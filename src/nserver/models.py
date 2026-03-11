@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 ## Standard Library
-from typing import Optional, Union, List
 
 ## Installed
 import dnslib
@@ -57,7 +56,7 @@ class Query:  # pylint: disable=too-few-public-methods
 
 ## Response Classes
 ## -----------------------------------------------------------------------------
-OptionalRecordList = Optional[Union[RecordBase, List[RecordBase]]]
+OptionalRecordList = RecordBase | list[RecordBase] | None
 
 
 class Response:

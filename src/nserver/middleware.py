@@ -6,8 +6,8 @@ from __future__ import annotations
 ## Standard Library
 import inspect
 import threading
-from typing import TYPE_CHECKING, Callable, Generic, TypeVar
-import sys
+from typing import TYPE_CHECKING, Generic, TypeVar, TypeAlias
+from collections.abc import Callable
 
 ## Installed
 import dnslib
@@ -16,13 +16,6 @@ from pillar.logging import LoggingMixin
 ## Application
 from .models import Query, Response
 from .rules import coerce_to_response, RuleResult
-
-## Special
-if sys.version_info < (3, 10):
-    from typing_extensions import TypeAlias
-else:
-    from typing import TypeAlias
-
 
 ### CONSTANTS
 ### ============================================================================

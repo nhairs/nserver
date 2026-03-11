@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nserver"
-version = "3.1.0"
+version = "3.2.0.dev1"
 description = "DNS Name Server Framework"
 authors  = [
     {name = "Nicholas Hairs", email = "info+nserver@nicholashairs.com"},
 ]
 
 # Dependency Information
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "dnslib",
     "pillar~=0.5",
@@ -25,8 +25,6 @@ license = {text = "MIT"}
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

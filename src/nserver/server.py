@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 ## Standard Library
-from typing import TypeVar, Generic, Pattern
+from typing import TypeVar, Generic
+from re import Pattern
 
 ## Installed
 import dnslib

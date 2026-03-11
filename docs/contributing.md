@@ -92,6 +92,8 @@ In general backwards compatability is always preferred.
 
 Feature changes MUST be compatible with all [security supported versions of Python](https://endoflife.date/python) and SHOULD be compatible with all unsupported versions of Python where [recent downloads over the last 90 days exceeds 10% of all downloads](https://pypistats.org/packages/nserver).
 
+As of 2026-03-11 feature support is provided for Python `3.10+`.
+
 In general, only the latest `major.minor` version of NServer is supported. Bug fixes and feature backports requiring a version branch may be considered but must be discussed with the maintainers first.
 
 See also [Security Policy](security.md).
