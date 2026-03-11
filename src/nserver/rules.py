@@ -7,7 +7,9 @@ from __future__ import annotations
 
 ## Standard Library
 import re
-from typing import Callable, Pattern, Union, Type, List
+from typing import TypeAlias
+from collections.abc import Callable
+from re import Pattern
 
 ## Installed
 import dnslib
@@ -56,7 +58,7 @@ def coerce_to_response(result: RuleResult) -> Response:
     raise TypeError(f"Cannot process result: {result!r}")
 
 
-def smart_make_rule(rule: Union[Type[RuleBase], str, Pattern], *args, **kwargs) -> RuleBase:
+def smart_make_rule(rule: type[RuleBase] | str | Pattern, *args, **kwargs) -> RuleBase:
     """Create a rule using shorthand notation.
 
     The exact type of rule returned depends on what is povided by `rule`.
@@ -91,12 +93,12 @@ def smart_make_rule(rule: Union[Type[RuleBase], str, Pattern], *args, **kwargs) 
 
 ### CLASSES
 ### ============================================================================
-RuleResult = Union[Response, RecordBase, List[RecordBase], None]
+RuleResult: TypeAlias = Response | RecordBase | list[RecordBase] | None
 """
 Type Alias for the result of a rule response function
 """
 
-ResponseFunction = Callable[[Query], RuleResult]
+ResponseFunction: TypeAlias = Callable[[Query], RuleResult]
 """
 Type Alias for functions that will be called when a rule is matched
 """
