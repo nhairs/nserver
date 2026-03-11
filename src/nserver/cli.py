@@ -41,7 +41,7 @@ class CliApplication(pillar.application.Application):
         parser.add_argument(
             "--application",
             action="store",
-            choices=["direct", "threads", "threadpool"],
+            choices=["direct", "threads"],
             default="direct",
             help="Application type to use when running the server",
         )
@@ -51,7 +51,7 @@ class CliApplication(pillar.application.Application):
             action="store",
             type=int,
             default=None,
-            help="Max number of worker threads to use. Only  used when --application=[threads,threadpool]",
+            help="Max number of worker threads to use. Only  used when --application=[threads]",
         )
 
         ## Server
@@ -165,12 +165,6 @@ class CliApplication(pillar.application.Application):
             )
         elif self.args.application == "threads":
             application = nserver.application.ThreadsApplication(
-                self.server,
-                self.args.transport(self.args.host, self.args.port),
-                self.args.workers,
-            )
-        elif self.args.application == "threadpool":
-            application = nserver.application.ThreadPoolApplication(
                 self.server,
                 self.args.transport(self.args.host, self.args.port),
                 self.args.workers,

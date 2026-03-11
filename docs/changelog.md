@@ -11,11 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ThreadsApplication` that processes requests using worker threads.
   - Access on the CLI using `--application=threads`.
   - Number of worker threads can be controlled through the CLI using`--workers`.
-- `ThreadPoolApplication` that processes requests using a threadpool.
-  - Access on the CLI using `--application=threadpool`.
-  - Number of threads can be controlled through the CLI using`--workers`.
 
-### Change
+### Changed
 - Improve log messages when starting and stopping an Application.
 
 ### Removed

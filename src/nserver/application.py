@@ -182,7 +182,6 @@ class ThreadsApplication(BaseApplication):
             self.receive_thread.start()
 
             self.debug("Starting worker_threads")
-            # map(lambda t: t.start(), self.worker_threads)
             for t in self.worker_threads:
                 t.start()
             self.vdebug(f"worker threads: {self.worker_threads}")
@@ -223,7 +222,6 @@ class ThreadsApplication(BaseApplication):
         # self.receive_queue.shutdown()
 
         self.debug("Joining worker_threads")
-        # map(lambda t: t.join(), self.worker_threads)
         for t in self.worker_threads:
             t.join()
 
@@ -277,8 +275,10 @@ class ThreadsApplication(BaseApplication):
                 self.receive_queue.task_done()
 
             except queue.Empty:
-                # No work and shutting down
                 if self.shutdown_server:
+                    # No work and shutting down
+                    # Note: there is a race condition here and we may shutdown the worker loop
+                    #  before the receive loop has shutdown causing a message to be lost.
                     self.debug("work-loop: shutting down")
                     break
                 # No work
@@ -309,8 +309,10 @@ class ThreadsApplication(BaseApplication):
                 self.send_queue.task_done()
 
             except queue.Empty:
-                # No work and shutting down
                 if self.shutdown_server:
+                    # No work and shutting down
+                    # Note: there is a race condition here and we may shutdown the send loop
+                    #  before the worker loop has shutdown causing a message to be lost.
                     self.debug("send-loop: shutting down")
                     break
                 # No work
@@ -328,169 +330,3 @@ class ThreadsApplication(BaseApplication):
                     self.error_count += 1
                 self.send_queue.task_done()
         return
-
-
-class ThreadPoolApplication(BaseApplication):
-    """Application that processes requests using a threadpool.
-
-    New in `3.2`
-    """
-
-    MAX_ERRORS: int = 10
-
-    exit_code: int
-
-    def __init__(
-        self,
-        server: NameServer | RawNameServer,
-        transport: TransportBase,
-        max_workers: Optional[int] = None,
-    ) -> None:
-        super().__init__(server)
-        self.transport = transport
-        self.receive_thread = threading.Thread(target=self.receive_loop, name="nserver-recv-loop")
-        self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers, "nserver-worker")
-        self.error_count = 0
-        self.error_count_lock = threading.Lock()
-        self.exit_code = 0
-        self.shutdown_server = False
-        return
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(server={self.server!r}, transport={self.transport!r}, max_workers={self.thread_pool._max_workers})"
-
-    def run(self) -> int:
-        """Start running the server
-
-        Returns:
-            `exit_code`, `0` if exited normally
-        """
-        # Start Server
-        # TODO: Do we want to recreate the transport instance or do we assume that
-        # transport.shutdown_server puts it back into a ready state?
-        # We could make this configurable? :thonking:
-
-        self.info(f"Starting {self!r}...")
-        try:
-            self.transport.start_server()
-            self.receive_thread.start()
-
-        except Exception as e:  # pylint: disable=broad-except
-            self.critical(f"Failed to start server. {e}", exc_info=e)
-            self.exit_code = 1
-            return self.exit_code
-
-        self.info("Application started.")
-
-        # Process Requests
-        while True:
-            if self.shutdown_server:
-                break
-
-            try:
-                time.sleep(0.1)
-
-                if self.MAX_ERRORS and self.error_count >= self.MAX_ERRORS:
-                    self.critical(f"Max errors hit ({self.error_count})")
-                    self.shutdown_server = True
-                    self.exit_code = 1
-
-            except KeyboardInterrupt:
-                self.info("KeyboardInterrupt received.")
-                self.shutdown_server = True
-
-        # Stop Server
-        self.info("Shutting down Application...")
-        self.receive_thread.join()
-        self.thread_pool.shutdown()
-        self.transport.stop_server()
-        self.info("Application has shutdown.")
-
-        return self.exit_code
-
-    def receive_loop(self) -> None:
-        """Receive messages from the transport and submit to the thread pool"""
-        while not self.shutdown_server:
-            try:
-                message = self.transport.receive_message()
-                if message is None:
-                    continue
-                self.thread_pool.submit(self.process_message, message)
-
-            except InvalidMessageError as e:
-                self.warning(f"{e}")
-
-            except Exception as e:  # pylint: disable=broad-except
-                self.handle_uncaught_error(e)
-        return
-
-    def process_message(self, message: MessageContainer) -> None:
-        """Process a message using the server"""
-        try:
-            message.response = self.server.process_request(message.message)
-            self.transport.send_message_response(message)
-        except Exception as e:  # pylint: disable=broad-except
-            self.handle_uncaught_error(e)
-        return
-
-    def handle_uncaught_error(self, e: Exception) -> None:
-        """Handle uncaught errors from the application, transport, and server."""
-        self.error(f"Uncaught error occured. {e}", exc_info=e)
-        with self.error_count_lock:
-            self.error_count += 1
-        return
-
-    def run_2(self) -> int:
-        """Start running the server
-
-        Returns:
-            `exit_code`, `0` if exited normally
-        """
-        # Start Server
-        # TODO: Do we want to recreate the transport instance or do we assume that
-        # transport.shutdown_server puts it back into a ready state?
-        # We could make this configurable? :thonking:
-
-        self.info(f"Starting {self!r}...")
-        try:
-            self.transport.start_server()
-        except Exception as e:  # pylint: disable=broad-except
-            self.critical(f"Failed to start server. {e}", exc_info=e)
-            self.exit_code = 1
-            return self.exit_code
-
-        self.info("Application started.")
-
-        # Process Requests
-        while True:
-            if self.shutdown_server:
-                break
-
-            try:
-                message = self.transport.receive_message()
-                if message is None:
-                    continue
-                self.thread_pool.submit(self.process_message, message)
-
-            except InvalidMessageError as e:
-                self.warning(f"{e}")
-
-            except Exception as e:  # pylint: disable=broad-except
-                self.handle_uncaught_error(e)
-
-            except KeyboardInterrupt:
-                self.info("KeyboardInterrupt received.")
-                self.shutdown_server = True
-
-            if self.MAX_ERRORS and self.error_count >= self.MAX_ERRORS:
-                self.critical(f"Max errors hit ({self.error_count})")
-                self.shutdown_server = True
-                self.exit_code = 1
-
-        # Stop Server
-        self.info("Shutting down Application...")
-        self.thread_pool.shutdown()
-        self.transport.stop_server()
-        self.info("Application has shutdown.")
-
-        return self.exit_code
