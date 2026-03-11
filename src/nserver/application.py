@@ -8,7 +8,6 @@ import os
 import queue
 import threading
 import time
-from typing import Optional
 
 ## Installed
 from pillar.logging import LoggingMixin
@@ -136,7 +135,7 @@ class ThreadsApplication(BaseApplication):
         self,
         server: NameServer | RawNameServer,
         transport: TransportBase,
-        workers: Optional[int] = None,
+        workers: int | None = None,
     ) -> None:
         super().__init__(server)
         self.transport = transport
