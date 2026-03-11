@@ -64,11 +64,6 @@ dev = [
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
     "mike",
-    # Avoid PyYaml 6.0 on pypy <3.10 on ARM64 (Mac)
-    # install error:
-    #     The built wheel `pyyaml-6.0.3-pp38-pypy38_pp73-macosx_10_9_arm64.whl` is not compatible
-    #     with the current Python 3.8 on macos aarch64
-    "pyyaml==6.0.1; python_version<'3.10' and implementation_name=='pypy' and sys_platform == 'darwin' and platform_machine=='arm64'",
 ]
 
 [project.scripts]
