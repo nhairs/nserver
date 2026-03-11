@@ -11,7 +11,7 @@ import selectors
 import socket
 import struct
 import time
-from typing import Deque, Optional, NewType, Any, cast
+from typing import Deque, NewType, Any, cast
 
 ## Installed
 import dnslib
@@ -181,7 +181,7 @@ class TransportBase(LoggingMixin):
         """Stop transport's server"""
         raise NotImplementedError()
 
-    def receive_message(self) -> Optional[MessageContainer]:
+    def receive_message(self) -> MessageContainer | None:
         """Receive a message from the running server"""
         raise NotImplementedError()
 
@@ -235,7 +235,7 @@ class UDPv4Transport(TransportBase):
             )
         return
 
-    def receive_message(self) -> Optional[MessageContainer]:
+    def receive_message(self) -> MessageContainer | None:
         """As per parent class"""
         try:
             data, remote_address = self.socket.recvfrom(512)
@@ -357,7 +357,7 @@ class TCPv4Transport(TransportBase):
         self.last_cache_clean = time.time()  # avoid immediately trying to cleaning the cache
         return
 
-    def receive_message(self) -> Optional[MessageContainer]:
+    def receive_message(self) -> MessageContainer | None:
         """As per parent class"""
         next_connection = self._get_next_connection()
         if next_connection is None:
@@ -398,7 +398,7 @@ class TCPv4Transport(TransportBase):
     def __repr__(self):
         return f"{self.__class__.__name__}(address={self.address!r}, port={self.port!r})"
 
-    def _get_next_connection(self) -> Optional[tuple[socket.socket, tuple[str, int]]]:
+    def _get_next_connection(self) -> tuple[socket.socket, tuple[str, int]] | None:
         """Get the next connection that is ready to receive data on.
 
         Changed in `3.2`: no longer blocks forever
