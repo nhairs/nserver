@@ -2,7 +2,7 @@
 
 On one host run:
 ```
-uv run nserver --server benchmark/sleepy_server.py:server --host 192.168.20.47 --port 5302 --application threads --workers 12
+uv run nserver --server benchmark/sleep_server.py:server --host 192.168.20.47 --port 5302 --application threads --workers 12
 ```
 
 On other host run:
