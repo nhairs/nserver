@@ -1,0 +1,14 @@
+.:5300 {
+    bind 0.0.0.0
+
+    cancel
+
+    forward . 127.0.0.1:5301 {
+        force_tcp
+    }
+
+    errors
+
+    #log
+}
+

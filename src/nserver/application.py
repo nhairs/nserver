@@ -4,6 +4,10 @@
 from __future__ import annotations
 
 ## Standard Library
+import os
+import queue
+import threading
+import time
 
 ## Installed
 from pillar.logging import LoggingMixin
@@ -11,7 +15,7 @@ from pillar.logging import LoggingMixin
 ## Application
 from .exceptions import InvalidMessageError
 from .server import NameServer, RawNameServer
-from .transport import TransportBase
+from .transport import TransportBase, MessageContainer
 
 
 ### CLASSES
@@ -57,6 +61,9 @@ class DirectApplication(BaseApplication):
         self.shutdown_server = False
         return
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(server={self.server!r}, transport={self.transport!r})"
+
     def run(self) -> int:
         """Start running the server
 
@@ -68,13 +75,14 @@ class DirectApplication(BaseApplication):
         # transport.shutdown_server puts it back into a ready state?
         # We could make this configurable? :thonking:
 
-        self.info(f"Starting {self.transport}")
+        self.info(f"Starting {self!r}...")
         try:
             self.transport.start_server()
         except Exception as e:  # pylint: disable=broad-except
             self.critical(f"Failed to start server. {e}", exc_info=e)
             self.exit_code = 1
             return self.exit_code
+        self.info("Applicationed started.")
 
         # Process Requests
         error_count = 0
@@ -84,6 +92,8 @@ class DirectApplication(BaseApplication):
 
             try:
                 message = self.transport.receive_message()
+                if message is None:
+                    continue
                 message.response = self.server.process_request(message.message)
                 self.transport.send_message_response(message)
 
@@ -103,7 +113,218 @@ class DirectApplication(BaseApplication):
                 self.shutdown_server = True
 
         # Stop Server
-        self.info("Shutting down server")
+        self.info("Shutting down Application...")
         self.transport.stop_server()
+        self.info("Application has shutdown.")
 
         return self.exit_code
+
+
+class ThreadsApplication(BaseApplication):
+    """Application that processes requests using a threads.
+
+    New in `3.2`
+    """
+
+    MAX_ERRORS: int = 10
+    QUEUE_MAX_SIZE = 100_000
+
+    exit_code: int
+
+    def __init__(
+        self,
+        server: NameServer | RawNameServer,
+        transport: TransportBase,
+        workers: int | None = None,
+    ) -> None:
+        super().__init__(server)
+        self.transport = transport
+        self.workers = (
+            max(workers, 1) if workers is not None else min(max(os.cpu_count() - 2, 1), 16)  # type: ignore[operator]
+        )
+        self.error_count = 0
+        self.error_count_lock = threading.Lock()
+        self.exit_code = 0
+        self.shutdown_server = False
+
+        self.receive_thread = threading.Thread(target=self.receive_loop, name="nserver-recv")
+        self.receive_queue: queue.Queue[MessageContainer] = queue.Queue(self.QUEUE_MAX_SIZE)
+        self.worker_threads = [
+            threading.Thread(target=self.worker_loop, name=f"nserver-worker-{i}")
+            for i in range(self.workers)
+        ]
+        self.send_queue: queue.Queue[MessageContainer] = queue.Queue(self.QUEUE_MAX_SIZE)
+        self.send_thread = threading.Thread(target=self.send_loop, name="nserver-send")
+        return
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(server={self.server!r}, transport={self.transport!r}, workers={self.workers})"
+
+    def run(self) -> int:
+        """Start running the server
+
+        Returns:
+            `exit_code`, `0` if exited normally
+        """
+        # Start Server
+        # TODO: Do we want to recreate the transport instance or do we assume that
+        # transport.shutdown_server puts it back into a ready state?
+        # We could make this configurable? :thonking:
+
+        self.info(f"Starting {self!r}...")
+        try:
+            self.debug("Starting transport")
+            self.transport.start_server()
+
+            self.debug("Starting recvieve_thread")
+            self.receive_thread.start()
+
+            self.debug("Starting worker_threads")
+            for t in self.worker_threads:
+                t.start()
+            self.vdebug(f"worker threads: {self.worker_threads}")
+
+            self.debug("Starting send_thread")
+            self.send_thread.start()
+
+        except Exception as e:  # pylint: disable=broad-except
+            self.critical(f"Failed to start server. {e}", exc_info=e)
+            self.exit_code = 1
+            return self.exit_code
+
+        self.info("Application started.")
+
+        # Process Requests
+        while True:
+            try:
+                if self.MAX_ERRORS and self.error_count >= self.MAX_ERRORS:
+                    self.critical(f"Max errors hit ({self.error_count})")
+                    self.shutdown_server = True
+                    self.exit_code = 1
+                    break
+
+                time.sleep(1)
+
+            except KeyboardInterrupt:
+                self.info("KeyboardInterrupt received.")
+                self.shutdown_server = True
+                break
+
+        # Stop Server
+        self.info("Shutting down Application...")
+        self.debug("Joining receive_thread")
+        self.receive_thread.join()
+
+        # TODO: queue.Queue.shutdown available in 3.13+
+        # self.debug("Shutting down recvieve_queue")
+        # self.receive_queue.shutdown()
+
+        self.debug("Joining worker_threads")
+        for t in self.worker_threads:
+            t.join()
+
+        # TODO: queue.Queue.shutdown available in 3.13+
+        # self.debug("Shutting down send_queue")
+        # self.send_queue.shutdown()
+
+        self.debug("Joining send_thread")
+        self.send_thread.join()
+
+        self.debug("Stopping transport")
+        self.transport.stop_server()
+
+        self.info("Application has shutdown.")
+
+        return self.exit_code
+
+    def receive_loop(self) -> None:
+        """Receive messages from the transport and send them to the worker threads"""
+        self.debug("recv-loop: starting")
+        while not self.shutdown_server:
+            try:
+                self.vvdebug("recv-loop: attempting to receive message")
+                message = self.transport.receive_message()
+                if message is None:
+                    continue
+                self.vdebug(f"recv-loop: message received {message}")
+                self.receive_queue.put(message)
+
+            except InvalidMessageError as e:
+                self.warning(f"recv-loop: Skipping invalid message: {e}")
+
+            except Exception as e:  # pylint: disable=broad-except
+                self.error(f"recv-loop: uncaught error occured. {e}", exc_info=e)
+                with self.error_count_lock:
+                    self.error_count += 1
+
+        self.debug("recv-loop: shutting down")
+        return
+
+    def worker_loop(self) -> None:
+        """Process a message using the server and send to the send thread"""
+        self.debug("work-loop: starting")
+        while True:
+            try:
+                self.vvdebug("work-loop: attempting to receive message")
+                message = self.receive_queue.get(True, 1)
+                self.vdebug(f"work-loop: received message {message}")
+                message.response = self.server.process_request(message.message)
+                self.send_queue.put(message)
+                self.receive_queue.task_done()
+
+            except queue.Empty:
+                if self.shutdown_server:
+                    # No work and shutting down
+                    # Note: there is a race condition here and we may shutdown the worker loop
+                    #  before the receive loop has shutdown causing a message to be lost.
+                    self.debug("work-loop: shutting down")
+                    break
+                # No work
+                continue
+
+            # TODO: queue.Queue.shutdown available in 3.13+
+            # except queue.ShutDown:
+            #     # Queue empty and no more work
+            #     self.debug("work-loop: shutting down")
+            #     break
+
+            except Exception as e:  # pylint: disable=broad-except
+                self.error(f"work-loop: uncaught error occured. {e}", exc_info=e)
+                with self.error_count_lock:
+                    self.error_count += 1
+                self.receive_queue.task_done()
+        return
+
+    def send_loop(self) -> None:
+        """Send a processed message"""
+        self.debug("send-loop: starting")
+        while True:
+            try:
+                self.vvdebug("send-loop: attempting to receive message")
+                message = self.send_queue.get(True, 1)
+                self.vdebug(f"send-loop: received message {message}")
+                self.transport.send_message_response(message)
+                self.send_queue.task_done()
+
+            except queue.Empty:
+                if self.shutdown_server:
+                    # No work and shutting down
+                    # Note: there is a race condition here and we may shutdown the send loop
+                    #  before the worker loop has shutdown causing a message to be lost.
+                    self.debug("send-loop: shutting down")
+                    break
+                # No work
+                continue
+
+            # TODO: queue.Queue.shutdown available in 3.13+
+            # except queue.ShutDown:
+            #     # Queue empty and no more work
+            #     self.debug("send-loop: shutting down")
+            #     break
+
+            except Exception as e:  # pylint: disable=broad-except
+                self.error(f"send-loop: uncaught error occured. {e}", exc_info=e)
+                with self.error_count_lock:
+                    self.error_count += 1
+                self.send_queue.task_done()
+        return
