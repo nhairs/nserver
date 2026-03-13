@@ -693,6 +693,57 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ThreadsApplication
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" ThreadsApplication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.receive_loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;receive_loop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;run
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.send_loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_loop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.worker_loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;worker_loop
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -980,6 +1031,57 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ThreadsApplication
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" ThreadsApplication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.receive_loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;receive_loop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.run" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;run
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.send_loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_loop
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nserver.application.ThreadsApplication.worker_loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;worker_loop
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1178,6 +1280,150 @@
           </tr>
       </tbody>
     </table>
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="nserver.application.ThreadsApplication" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">ThreadsApplication</span>
+
+
+<a href="#nserver.application.ThreadsApplication" class="headerlink" title="Permanent link">🔗</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ThreadsApplication</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">server</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.server.NameServer" href="../server/#nserver.server.NameServer">NameServer</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.server.RawNameServer" href="../server/#nserver.server.RawNameServer">RawNameServer</a></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">transport</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.transport.TransportBase" href="../transport/#nserver.transport.TransportBase">TransportBase</a></span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">workers</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="nserver.application.BaseApplication" href="#nserver.application.BaseApplication">BaseApplication</a></code></p>
+
+
+        <p>Application that processes requests using a threads.</p>
+<p>New in <code>3.2</code></p>
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="nserver.application.ThreadsApplication.receive_loop" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">receive_loop</span>
+
+
+<a href="#nserver.application.ThreadsApplication.receive_loop" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">receive_loop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Receive messages from the transport and send them to the worker threads</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="nserver.application.ThreadsApplication.run" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">run</span>
+
+
+<a href="#nserver.application.ThreadsApplication.run" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Start running the server</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>exit_code</code>, <code>0</code> if exited normally</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="nserver.application.ThreadsApplication.send_loop" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">send_loop</span>
+
+
+<a href="#nserver.application.ThreadsApplication.send_loop" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">send_loop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Send a processed message</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="nserver.application.ThreadsApplication.worker_loop" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">worker_loop</span>
+
+
+<a href="#nserver.application.ThreadsApplication.worker_loop" class="headerlink" title="Permanent link">🔗</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">worker_loop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Process a message using the server and send to the send thread</p>
 
     </div>
 

@@ -1291,7 +1291,7 @@
   </span>
 
 <a href="#nserver.rules.ResponseFunction" class="headerlink" title="Permanent link">🔗</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ResponseFunction</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Callable" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="nserver.models.Query" href="../models/#nserver.models.Query">Query</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.rules.RuleResult" href="#nserver.rules.RuleResult">RuleResult</a></span><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ResponseFunction</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.TypeAlias" href="https://docs.python.org/3/library/typing.html#typing.TypeAlias">TypeAlias</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="collections.abc.Callable" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable">Callable</a></span><span class="p">[[</span><span class="n"><a class="autorefs autorefs-internal" title="nserver.models.Query" href="../models/#nserver.models.Query">Query</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.rules.RuleResult" href="#nserver.rules.RuleResult">RuleResult</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1314,9 +1314,9 @@
   </span>
 
 <a href="#nserver.rules.RuleResult" class="headerlink" title="Permanent link">🔗</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RuleResult</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n"><a class="autorefs autorefs-internal" title="nserver.models.Response" href="../models/#nserver.models.Response">Response</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.records.RecordBase" href="../records/#nserver.records.RecordBase">RecordBase</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="typing.List" href="https://docs.python.org/3/library/typing.html#typing.List">List</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="nserver.records.RecordBase" href="../records/#nserver.records.RecordBase">RecordBase</a></span><span class="p">],</span> <span class="kc">None</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">]</span>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RuleResult</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.TypeAlias" href="https://docs.python.org/3/library/typing.html#typing.TypeAlias">TypeAlias</a></span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n"><a class="autorefs autorefs-internal" title="nserver.models.Response" href="../models/#nserver.models.Response">Response</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.records.RecordBase" href="../records/#nserver.records.RecordBase">RecordBase</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="nserver.records.RecordBase" href="../records/#nserver.records.RecordBase">RecordBase</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1337,7 +1337,7 @@
 
 <a href="#nserver.rules.RegexRule" class="headerlink" title="Permanent link">🔗</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RegexRule</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">regex</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Pattern" href="https://docs.python.org/3/library/typing.html#typing.Pattern">Pattern</a></span><span class="p">,</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">regex</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="re.Pattern" href="https://docs.python.org/3/library/re.html#re.Pattern">Pattern</a></span><span class="p">,</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">allowed_qtypes</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">],</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">func</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.rules.ResponseFunction" href="#nserver.rules.ResponseFunction">ResponseFunction</a></span><span class="p">,</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">case_sensitive</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1367,7 +1367,7 @@
           <tr class="doc-section-item">
             <td><code>regex</code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="typing.Pattern" href="https://docs.python.org/3/library/typing.html#typing.Pattern">Pattern</a></code>
+                  <code><a class="autorefs autorefs-external" title="re.Pattern" href="https://docs.python.org/3/library/re.html#re.Pattern">Pattern</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2032,10 +2032,8 @@ query name are covereted to lowercase prior to matching.</p>
 
 <a href="#nserver.rules.smart_make_rule" class="headerlink" title="Permanent link">🔗</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">smart_make_rule</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">rule</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="typing.Type" href="https://docs.python.org/3/library/typing.html#typing.Type">Type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="nserver.rules.RuleBase" href="#nserver.rules.RuleBase">RuleBase</a></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Pattern" href="https://docs.python.org/3/library/typing.html#typing.Pattern">Pattern</a></span><span class="p">],</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">**</span><span class="n">kwargs</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.rules.RuleBase" href="#nserver.rules.RuleBase">RuleBase</a></span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">rule</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="nserver.rules.RuleBase" href="#nserver.rules.RuleBase">RuleBase</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="re.Pattern" href="https://docs.python.org/3/library/re.html#re.Pattern">Pattern</a></span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="nserver.rules.RuleBase" href="#nserver.rules.RuleBase">RuleBase</a></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2066,7 +2064,7 @@ query name are covereted to lowercase prior to matching.</p>
           <tr class="doc-section-item">
             <td><code>rule</code></td>
             <td>
-                  <code><a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-external" title="typing.Type" href="https://docs.python.org/3/library/typing.html#typing.Type">Type</a>[<a class="autorefs autorefs-internal" title="nserver.rules.RuleBase" href="#nserver.rules.RuleBase">RuleBase</a>], <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Pattern" href="https://docs.python.org/3/library/typing.html#typing.Pattern">Pattern</a>]</code>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#type">type</a>[<a class="autorefs autorefs-internal" title="nserver.rules.RuleBase" href="#nserver.rules.RuleBase">RuleBase</a>] | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" title="re.Pattern" href="https://docs.python.org/3/library/re.html#re.Pattern">Pattern</a></code>
             </td>
             <td>
               <div class="doc-md-description">
